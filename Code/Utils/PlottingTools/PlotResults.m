@@ -199,8 +199,8 @@ PlotTitle(m, 'Critical depth changes')
 end
 end
 
-function [] = PlotPorosities (td, m, inds)
-% PlotResults('PlotPorosities', td, m, []);
+function [] = PlotProfiles (td, m, inds)
+% PlotResults('PlotProfiles', td, m, []);
 
 tdvars = extract_y(td, m);
 if isempty(inds), inds = round(linspace(1,length(td.x),7)); end

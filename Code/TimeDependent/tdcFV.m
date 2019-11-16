@@ -38,8 +38,7 @@ fprintf('Time dependent solution solved with flag %d. \n', flag);
 
 if (flag == 1) && (plot_opt == 1)
     PlotResults('plot_timeseries', td, m);
-    PlotResults('PlotPorosities', td, m, []);
-    CalcExtrusionVolume(td,m,1);
+    PlotResults('PlotProfiles', td, m, []);
 end
 
 end
