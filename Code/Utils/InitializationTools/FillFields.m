@@ -1,4 +1,6 @@
 function [o] = FillFields (ParamNames, ParamVals, logParams)
+% [o] = FillFields (ParamNames, ParamVals, logParams)
+% 
 % fills the structure of model parameters for tdcFV,
 % o.ParamNames = ParamVals
 
