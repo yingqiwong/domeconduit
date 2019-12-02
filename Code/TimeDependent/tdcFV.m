@@ -67,7 +67,7 @@ elseif ss.y(2,end)>1
     fprintf('Steady state exit velocity = %.3e m/s. \n', ss.y(2,end));
     ssflag = -11;
     disp('Steady state exit velocity too fast'); return;
-elseif ss.y(2,end)<1e-8
+elseif ss.y(2,end)<1e-6
     fprintf('Steady state exit velocity = %.3e m/s. \n', ss.y(2,end));
     ssflag = -12;
     disp('Steady state exit velocity too low'); return; 
@@ -111,7 +111,7 @@ opts = smf_rad_dz('opt_setdef');
 
 % solver options
 opts.slv.use_mex    = 1;
-opts.slv.max_time   = 300;
+opts.slv.max_time   = 60;
 opts.slv.zero.tolx  = 1e-10;
 opts.slv.de.reltol  = 1e-10;
 opts.slv.de.abstol  = 1e-20;
@@ -145,8 +145,8 @@ opts.ch.mu    = 20e9;
 opts.ch.beta_fixed = 0;
 opts.ch.beta  = 1e-8;
 opts.ch.beta_ch = 3/4/opts.ch.mu*(1 + 1/3*log10(1/opts.ch.AR));
-opts.ch.x0    = -2.160634633581430e3; 
-opts.ch.y0    = -2.907450243039151e3;
+opts.ch.x0    = 0;  %-2.160634633581430e3; 
+opts.ch.y0    = 0;  %-2.907450243039151e3;
 % using straight line interpolation of Anderson and Segall (2011) Fig 5.
 % note here AR is defined in opposite sense, hence we do 1/m.ch.AR
 
