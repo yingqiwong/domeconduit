@@ -79,26 +79,35 @@ be = []; flag = -114;
 dp = m.be.dp;
 [dt0, dpdt] = calc_dt(m.Tspan(1), y0, m.be.dp, m);
 NtMax = round(diff(m.Tspan)/dt0);
-fprintf('Initial time step = %.4f yr for %.2f MPa change.\n Max time steps = %d.\n', ...
-    ConvertSecToYear(dt0), 1e-6*m.be.dp, NtMax);
+if m.slv.verbose
+    fprintf('Initial time step = %.4f yr for %.2f MPa change.\n Max time steps = %d.\n', ...
+        ConvertSecToYear(dt0), 1e-6*m.be.dp, NtMax);
+end
 
 % adjust dt so that it is not too small or too big.
 dtRange = m.be.dtFrac*diff(m.Tspan);
-if dt0<dtRange(1) 
-    dt0 = dtRange(1); 
+if dt0<dtRange(1)
+    dt0 = dtRange(1);
     dp = -dpdt*dt0;
-    fprintf('Too many time steps. Adjusted to dt = %.4f yr for dp = %.2f MPa change.\n', ...
-        ConvertSecToYear(dt0), 1e-6*dp);
+    
+    if m.slv.verbose
+        fprintf('Too many time steps. Adjusted to dt = %.4f yr for dp = %.2f MPa change.\n', ...
+            ConvertSecToYear(dt0), 1e-6*dp);
+    end
+    
 elseif dt0>dtRange(2)
-    dt0 = dtRange(2); 
+    dt0 = dtRange(2);
     dp = -dpdt*dt0;
-    fprintf('Too few time steps. Adjusted to dt = %.4f yr for dp = %.2f MPa change.\n', ...
-        ConvertSecToYear(dt0), 1e-6*dp);
+    
+    if m.slv.verbose
+        fprintf('Too few time steps. Adjusted to dt = %.4f yr for dp = %.2f MPa change.\n', ...
+            ConvertSecToYear(dt0), 1e-6*dp);
+    end
 end
 
 % max length of solution
 NtMax = round(diff(m.Tspan)/dt0);
-fprintf('Final max time steps = %d.\n', NtMax);
+if m.slv.verbose, fprintf('Adjusted max time steps = %d.\n', NtMax); end
 
 % initialize
 t     = zeros(1,NtMax);

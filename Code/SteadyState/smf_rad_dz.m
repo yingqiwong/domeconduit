@@ -132,6 +132,7 @@ function o = opt_setdef ()
   o.slv.zero.tolx = 1e-5;
   o.slv.de.reltol = 1e-5;
   o.slv.de.abstol = 1e-10;
+  o.slv.verbose = 1;
   % Max time [s] per solve attempt.
   o.slv.max_time = 60;
   o.Nz = 1001;  % number of points in depth

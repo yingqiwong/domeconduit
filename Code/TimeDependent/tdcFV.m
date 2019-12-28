@@ -28,13 +28,15 @@ end
 % set options for time stepping
 [m, y0, z] = tdcFV('td_init', ss.m, ss, use_be, 0);
 
-disp('Starting time dependent solution...');
+if (opts.slv.verbose), disp('Starting time dependent solution...'); end
 if (use_be)
     tic; [td, flag] = RunBE(y0, z, m, 1); toc;
 else
     [td, m, flag] = tdcFV('run_tdc', y0, z, m);
 end
-fprintf('Time dependent solution solved with flag %d. \n', flag);
+if (opts.slv.verbose)
+    fprintf('Time dependent solution solved with flag %d. \n', flag);
+end
 
 if (flag == 1) && (plot_opt == 1)
     PlotResults('plot_timeseries', td, m);
@@ -56,25 +58,31 @@ end
 
 function [ss, opts, ssflag] = run_ssc_opts (opts)
 
-disp('Starting steady state solution...');
+if (opts.slv.verbose), disp('Starting steady state solution...'); end
 tic;
-[ss, ssflag] = smf_rad_dz('solve', opts); 
-toc;
+[ss, ssflag] = smf_rad_dz('solve', opts);
+sstime = toc;
+if (opts.slv.verbose), fprintf('Elapsed time = %.4f seconds.\n', sstime); end
 
 if (ssflag~=1)
-    disp('No steady state solution'); ssflag = -11; return;
+    if (opts.slv.verbose), disp('No steady state solution'); end
+    ssflag = -10; return;
 elseif ss.y(2,end)>1
-    fprintf('Steady state exit velocity = %.3e m/s. \n', ss.y(2,end));
-    ssflag = -11;
-    disp('Steady state exit velocity too fast'); return;
+    if (opts.slv.verbose)
+        fprintf('ss exit velocity too fast = %.3e m/s. \n', ss.y(2,end));
+    end
+    ssflag = -11; return;
 elseif ss.y(2,end)<1e-6
-    fprintf('Steady state exit velocity = %.3e m/s. \n', ss.y(2,end));
-    ssflag = -12;
-    disp('Steady state exit velocity too low'); return; 
+    if (opts.slv.verbose)
+        fprintf('ss exit velocity too low = %.3e m/s. \n', ss.y(2,end));
+    end
+    ssflag = -12; return;
 end
-fprintf('Steady state exit velocity = %.3e m/s. \n', ss.y(2,end));
-disp('Steady-state model initialized');
 
+if opts.slv.verbose
+    fprintf('Steady state exit velocity = %.3e m/s. \n', ss.y(2,end));
+    disp('Steady-state model initialized');
+end
 end
 
 function [td, m, flag] = run_tdc (y0, z, m)
@@ -84,7 +92,9 @@ td = [];
 
 m.tStart = tic;
 [td, flag] = tdcFV('des_run', y0, z, m);
-toc(m.tStart);
+tdtime = toc(m.tStart);
+if (m.slv.verbose), fprintf('Elapsed time = %.4f seconds.\n', tdtime); end
+
 end
 
 function o = setdef ()
@@ -92,13 +102,13 @@ function o = setdef ()
 % default set
 o.V0        = 100e9;    % m3
 o.Omega     = 0;        % m3/s/Pa, factor /1e6/24/3600
-o.AR        = 0.66; 
+o.AR        = 0.66;
 o.L         = 4e3;
 o.op        = 19e6;     % Pa
 o.R         = 50;       % m
 o.total_h2o = 5;        % wt%
 o.total_co2 = 2000;     % ppm
-o.phi_gc    = 0.3;  
+o.phi_gc    = 0.3;
 o.k_lat     = 1e-13;    % m2. actually kc (magma perm scale), but here using legacy name from older codes
 o.f0        = 0.1;
 o.a         = 0.01;
@@ -115,6 +125,7 @@ opts.slv.max_time   = 60;
 opts.slv.zero.tolx  = 1e-10;
 opts.slv.de.reltol  = 1e-10;
 opts.slv.de.abstol  = 1e-20;
+opts.slv.verbose    = 0;
 opts.plug_gas_loss  = 1;
 opts.p_top          = 1e5;
 opts.Nz             = 601;
@@ -145,7 +156,7 @@ opts.ch.mu    = 20e9;
 opts.ch.beta_fixed = 0;
 opts.ch.beta  = 1e-8;
 opts.ch.beta_ch = 3/4/opts.ch.mu*(1 + 1/3*log10(1/opts.ch.AR));
-opts.ch.x0    = 0;  %-2.160634633581430e3; 
+opts.ch.x0    = 0;  %-2.160634633581430e3;
 opts.ch.y0    = 0;  %-2.907450243039151e3;
 % using straight line interpolation of Anderson and Segall (2011) Fig 5.
 % note here AR is defined in opposite sense, hence we do 1/m.ch.AR
@@ -226,20 +237,20 @@ else  % for actual solutions
     z = -ss.z(1:2:end)';
     dz = abs(ss.z(2) - ss.z(1));
     tm.Nz = length(z);
-
+    
     % fill in initial conditions
     ssy = reshape(ss.y(1:tm.Nv,1:2:end), tm.Nz*tm.Nv, 1);
     v   = [ss.y(2,2:2:end-1),interp1(ss.z, ss.y(2,:), -dz, 'pchip', 'extrap')];
     ssy(tm.blk.is.v:tm.Nv:end) = v;
     y0 = ssy./repmat(tm.slv.sy(1:tm.Nv),length(z),1);
-
+    
     tm.v0 = y0(2);
     tm.zphigc = find(ss.state(1,1:2:end)==1,1);
     if isempty(tm.zphigc), tm.zphigc = tm.Nz; end
     
     tm.PlugDepth = find(ss.state(2,1:2:end) == 1,1);
     if isempty(tm.PlugDepth), tm.PlugDepth = tm.Nz; end
-%     if (use_be), tm.PlugDepth = 0; end
+    %     if (use_be), tm.PlugDepth = 0; end
 end
 
 tm.dQUICKn = QUICK(z);
@@ -249,12 +260,12 @@ end
 function [td, flag] = des_run (y0, z, m, MassOn)
 % runs the time-dependent equations
 % td = tdcFV('des_run', y0, z, m)
-% 
-% -- Inputs -- 
+%
+% -- Inputs --
 % Tspan:time span for integration
 % y0:   initial condition
 % m:    model parameters
-% 
+%
 % -- Outputs --
 % td:   solution
 
@@ -288,14 +299,14 @@ end
 
 
 t = [];  dt = (m.Tspan(2) - m.Tspan(1))/(m.Nt-1); t0 = m.Tspan(1);
-y = [];  yp = []; 
+y = [];  yp = [];
 xe = []; ye = []; ie = [];
 IntAttempt = 1;
 
 while (1)
     
-    fprintf('Integration attempt %d\n', IntAttempt);
-
+    %fprintf('Integration attempt %d\n', IntAttempt);
+    
     Tspan = [t0, m.Tspan(2)];
     
     tdtmp = ode15s(@(t,y) des(t,y,z,m),Tspan,y0,options);
@@ -323,20 +334,26 @@ while (1)
         flag = 1;
         break;
     elseif (tdtmp.ie == 2)
-        fprintf('Event 2 at t=%.1e, velocity below %.1e m/s.\n',...
-            tdtmp.xe, m.vmin);
+        if (m.slv.verbose)
+            fprintf('Event 2 at t=%.1e, velocity below %.1e m/s.\n',...
+                tdtmp.xe, m.vmin);
+        end
         flag = 2;
         break;
     elseif (any(tdtmp.ie == 3))
-        fprintf('Event 3 at t=%.1e, velocity goes negative.\n',...
-            tdtmp.xe);
+        if (m.slv.verbose)
+            fprintf('Event 3 at t=%.1e, velocity goes negative.\n',...
+                tdtmp.xe);
+        end
         flag = 3;
         break;
     elseif (any(tdtmp.ie == 4))
-        fprintf('Event 4 at t=%.1e, solver timeout after %.2f seconds.\n',...
-            tdtmp.xe, toc(m.tStart));
+        if (m.slv.verbose)
+            fprintf('Event 4 at t=%.1e, solver timeout after %.2f seconds.\n',...
+                tdtmp.xe, toc(m.tStart));
+        end
         flag = 4;
-        break;        
+        break;
     end
     
     % If not, prepare next segment
@@ -362,8 +379,10 @@ while (1)
     
     IntAttempt = IntAttempt+1;
     if tdtmp.ie == 1
-        fprintf('Event 1 at t=%.1e, velocity below %d%% of IC.\n',...
-            tdtmp.xe, m.vfrac*100);
+        if (m.slv.verbose)
+            fprintf('Event 1 at t=%.1e, velocity below %d%% of IC.\n',...
+                tdtmp.xe, m.vfrac*100);
+        end
     end
 end
 
@@ -389,7 +408,7 @@ function [MassMat] = calc_mass_matrix (t,y,z,m)
 % tic; massmat = tdcFV('calc_mass_matrix',0,y0,z,m); toc;
 %
 % uses symbolic result for mass matrix
-% input y in normalized units 
+% input y in normalized units
 % update 2017 Dec 18: editted to calculate elements at each depth in
 % vectorized approach
 
@@ -402,7 +421,7 @@ is = m.blk.is;
 yscl = y.*repmat(m.slv.sy(1:m.Nv),length(z),1);
 p = yscl(is.p:m.Nv:end);
 
-% make vector of chibreaks and coefbreaks for calculating chi_s in the 
+% make vector of chibreaks and coefbreaks for calculating chi_s in the
 % mass matrix function
 breaks = m.pf.pp.breaks;
 coefs  = m.pf.pp.coefs;
@@ -444,10 +463,10 @@ is = m.blk.is;
 
 % if the velocity drops below some threshold, it's faster to break and
 % integrate over a new time interval with different initial conditions
-val(1) = y(is.v)/m.v0 - m.vfrac; 
+val(1) = y(is.v)/m.v0 - m.vfrac;
 
 % if the base velocity drops too low
-val(2) = (y(is.v)*m.slv.sy(is.v) < m.vmin) - 1; 
+val(2) = (y(is.v)*m.slv.sy(is.v) < m.vmin) - 1;
 
 % if any solution component goes negative
 % val(3) = any(y(is.v:m.Nv:end)<0) - 1;
@@ -467,12 +486,12 @@ function dydt = des (t, y, z, m)
 % Function that contains the rhs of the time derivatives
 % des_dydt = tdcFV('des',0,y0,z,m);
 %
-% -- Inputs -- 
+% -- Inputs --
 %  t:   time
 %  y:   vector of 4 unknowns: [p,v,phi_g,mw]
 %  z:   depth of evaluation
 %  m:   model parameters
-% 
+%
 % -- Outputs --
 % dydt: time derivatives
 
@@ -484,7 +503,7 @@ dydt = zeros(size(y));
 % rescale to real units
 yscl    = y.*repmat(m.slv.sy(1:m.Nv),length(z),1);
 p       = yscl(is.p:Nv:end);
-v       = yscl(is.v:Nv:end); 
+v       = yscl(is.v:Nv:end);
 phi_g   = yscl(is.phi_g:Nv:end);
 if m.Nv == 3, mw = m.mw_ch;
 else,         mw = yscl(is.mw:Nv:end); end
@@ -512,8 +531,8 @@ vgs = -kmags.*dpdzs;
 h2o.liq = 1/dz*(h2oliqn(2:end).*vn - h2oliqs(2:end).*vs);
 
 h2o.gas = 1/dz*(h2ogasn(2:end).*(vn+vgn(2:end)) - h2ogass(2:end).*(vs+vgs(2:end)))...
-                    + E.h2o.lat(2:end);
-                
+    + E.h2o.lat(2:end);
+
 % interior points
 dydt(Nv+is.p:Nv:end)     = -1/dz*(nvn(2:end).*vn - nvs(2:end).*vs);
 dydt(Nv+is.phi_g:Nv:end) = -h2o.liq - h2o.gas;
@@ -526,8 +545,8 @@ if m.Nv == 4
     
     co2.liq = 1/dz*(co2liqn(2:end).*vn - co2liqs(2:end).*vs);
     co2.gas = 1/dz*(co2gasn(2:end).*(vn+vgn(2:end)) - co2gass(2:end).*(vs+vgs(2:end)))...
-                        + E.co2.lat(2:end);
-
+        + E.co2.lat(2:end);
+    
     
     dydt(Nv+is.mw:Nv:end) = -co2.liq - co2.gas;
 end
@@ -540,16 +559,16 @@ if m.plug_gas_loss
         plugdepth = find(vvfrac < m.newtonian.vvfrac_thr, 1);
     end
     
-%     pluglog  = 1./(1+exp(-0.05*(z-z(plugdepth))));
+    %     pluglog  = 1./(1+exp(-0.05*(z-z(plugdepth))));
     pluglog = zeros(size(p)); pluglog(z>z(plugdepth)) = 1;
-
+    
     [h2ogasn2, h2ogass2] = tdcFV('get_FaceVals', 1./(1+E.Gamma).*phi_g,  m.dQUICKn);
     h2o.plug = E.rho_g(2:end)/dz.*(h2ogasn2(2:end).*vn - h2ogass2(2:end).*vs);
-
+    
     waterRHS = -h2o.plug;
     indstart = 1;
     h2oind   = (plugdepth-indstart)*Nv + is.phi_g;
-%     dydt(h2oind:m.Nv:end) = waterRHS(plugdepth-indstart:end);
+    %     dydt(h2oind:m.Nv:end) = waterRHS(plugdepth-indstart:end);
     dydt(h2oind:m.Nv:end) = (1-pluglog((plugdepth-indstart+1):end)).*dydt(h2oind:m.Nv:end) + ...
         pluglog((plugdepth-indstart+1):end).*waterRHS((plugdepth-indstart):end);
     
@@ -560,10 +579,10 @@ if m.plug_gas_loss
         
         co2RHS   = - co2.plug;
         co2ind = (plugdepth-indstart)*Nv + is.mw;
-%         dydt(co2ind:m.Nv:end) = co2RHS(plugdepth-indstart:end);
+        %         dydt(co2ind:m.Nv:end) = co2RHS(plugdepth-indstart:end);
         dydt(co2ind:m.Nv:end) = (1-pluglog((plugdepth-indstart+1):end)).*dydt(co2ind:m.Nv:end) + ...
             pluglog((plugdepth-indstart+1):end).*co2RHS((plugdepth-indstart):end);
-
+        
     end
 end
 
@@ -579,7 +598,7 @@ if m.Nv == 4,     dydt(is.mw) = mw(1) - mw_ch;  end
 vch            = 1.5*v(1) - 0.5*v(2);
 if m.tdep.p_bot_tvary == 1
     dydt(is.p) = ((m.ch.Omega*(m.ch.pdeep-p(1)) - pi*m.R^2*vch)/m.ch.V0/beta);
-%     tc = ConvertYearToSec(1); dydt(is.p) = -1e6/tc*sin(t/tc); 
+    %     tc = ConvertYearToSec(1); dydt(is.p) = -1e6/tc*sin(t/tc);
 else
     dydt(is.p) = 0;
 end
@@ -597,7 +616,7 @@ if isfield(m, 'Source')
     % input the correct bc for dpdt(1)
     switch m.Source.Type
         case 'zexp_tsine'
-            dydt(is.p) = m.pdiff/m.p_tc*cos(t/m.p_tc);   
+            dydt(is.p) = m.pdiff/m.p_tc*cos(t/m.p_tc);
         case 'zexp_texp'
             dydt(is.p) = -m.pdiff/m.p_tc.*exp(-t/m.p_tc);
     end
@@ -613,16 +632,16 @@ end
 end
 
 function E = calc_exprs (t, y, z, m, dpdz, AllFields)
-% similar to first part of des_calc_exprs in smf_rad.m.  
+% similar to first part of des_calc_exprs in smf_rad.m.
 % This function calculate dependent variables other than those listed in y
 % E = tdcFV('calc_exprs',0,yscl,ztd,m,dpdz,1);
 %
-% -- Inputs -- 
+% -- Inputs --
 %  y:     vector of 4 unknowns in real SI units: [p,v,phi_g,mw]
 %  z:     depth of evaluation
 %  m:     model parameters
 %  degas: switch for degassing. =1 when percolation threshold is reached.
-% 
+%
 % -- Outputs --
 %  E:     structure containing various properties
 
@@ -632,7 +651,7 @@ is = m.blk.is;
 Nv = m.Nv;
 
 p     = y(is.p:Nv:end);
-v     = y(is.v:Nv:end); 
+v     = y(is.v:Nv:end);
 phi_g = y(is.phi_g:Nv:end);
 if m.Nv == 3, mw = m.mw_ch;
 else,         mw = y(is.mw:m.Nv:end); end
@@ -646,9 +665,9 @@ if isfield(m, 'Source')
     degas = ones(size(p));
 end
 
-% Volatile mass fractions. 
+% Volatile mass fractions.
 [Chi_hd, Chi_cd] = solubility_liu_explicit(p, m.T, mw);
-Chi_hd = 1e-2*Chi_hd; 
+Chi_hd = 1e-2*Chi_hd;
 Chi_cd = 1e-6*Chi_cd;
 c1 = 1./(1 - Chi_hd - Chi_cd);    %editted c1,c2 Oct 2, 2017
 c2 = 1./(1 + Chi_hd.*c1*(m.rho_l/m.rho_hd) + Chi_cd.*c1*(m.rho_l/m.rho_cd));
@@ -671,15 +690,15 @@ phi_s = chi_s.*m.rho_l.*c12.*(1 - phi_g)./...
     (m.rho_s + chi_s.*(c12*m.rho_l - m.rho_s));
 
 % liquid fraction
-phi_l = (1 - phi_s - phi_g).*c2; 
+phi_l = (1 - phi_s - phi_g).*c2;
 E.phi_l = phi_l;
 
-% gas density 
-rho_g = p.*(mw./(m.Rw*m.T) + (1 - mw)./(m.Rc*m.T)); 
+% gas density
+rho_g = p.*(mw./(m.Rw*m.T) + (1 - mw)./(m.Rc*m.T));
 E.rho_g = rho_g;
 
 % bulk density
-rho = m.rho_l*phi_l.*c1 + m.rho_s.*phi_s + rho_g.*phi_g; 
+rho = m.rho_l*phi_l.*c1 + m.rho_s.*phi_s + rho_g.*phi_g;
 phi_s_eta = phi_s./(1-phi_g);
 
 Gamma = (1 - mw)./(m.B*mw);
@@ -770,16 +789,16 @@ persistent tprev zphigc_prev
 if isempty(tprev) || t == 0
     tprev = t;
     zphigc_prev = m.zphigc;
-%     zphigc_prev = find(phi_g > m.phi_gc, 1);  % may not equal m.zphigc
-%     if isempty(zphigc_prev), zphigc_prev = m.Nz; end
+    %     zphigc_prev = find(phi_g > m.phi_gc, 1);  % may not equal m.zphigc
+    %     if isempty(zphigc_prev), zphigc_prev = m.Nz; end
 end
 
 if t>tprev  % ensures that we only adjust for later time
     
     zphigcInd = find(phi_g > m.phi_gc, 1);
     
-    % only adjust if the new threshold depth is deeper 
-    if zphigcInd > zphigc_prev 
+    % only adjust if the new threshold depth is deeper
+    if zphigcInd > zphigc_prev
         zphigcInd = zphigc_prev;
     elseif isempty(zphigcInd)
         zphigcInd = zphigc_prev;
@@ -800,7 +819,7 @@ function [Fn, Fs] = get_FaceVals (F, dQUICKn)
 % get values at north and south faces of each cell
 
 Nz = length(F);
-% dQUICKs = [1.5, -0.5, zeros(1,Nz-2); dQUICKn(1:end-1,:)];  
+% dQUICKs = [1.5, -0.5, zeros(1,Nz-2); dQUICKn(1:end-1,:)];
 % dQUICKs = [15/8, -5/4, 3/8, zeros(1,Nz-3); dQUICKn(1:end-1,:)];
 
 Fn = dQUICKn*F;
@@ -814,7 +833,7 @@ end
 function [dQUICKn] = QUICK (z)
 % [dQUICKn] = tdcFV('QUICK',z);
 
-% using QUICK to estimate variable values at the north cell face, 
+% using QUICK to estimate variable values at the north cell face,
 % using cell-based integrals
 
 Nz = length(z);
@@ -833,7 +852,7 @@ end
 
 function [mw_ch, phi_g_ch] = calc_ch_gas (t, pch, m)
 % evaluates the two equations that relate total water and CO2 content in
-% the chamber to mw_ch and phi_g_ch.  
+% the chamber to mw_ch and phi_g_ch.
 % if total volatile content changes with time, expand input variables
 % [mw_ch, phi_g_ch] = tdcFV('calc_ch_gas', pch, m);
 
@@ -869,7 +888,7 @@ r = Gamma*1e-2*(chi_ch.h2o - Chi_hd) -...
 end
 
 function [chi_ch] = CalcVolatileContent (t, m)
-% determine the total water content at conduit base 
+% determine the total water content at conduit base
 
 chi_ch = m.chi_ch.total;
 
@@ -882,24 +901,24 @@ end
 end
 
 function [beta] = CalcCompressibility (t, pch, m)
-% calculates the system compressibility (Pa^-1).  
+% calculates the system compressibility (Pa^-1).
 
 if m.ch.beta_fixed == 1
     beta = m.ch.beta;
 else
-
-% find the pressure at the chamber center, which determines density
-pMax  = 2*(m.ch.depth*m.sig.slope + m.sig.offset);
-pcc   = fzero(@(pcc) ChamberCenterPressure(t, pcc, pch, m), [pch, pMax]);
-rhocc = CalcRho(t, pcc, m);
-
-% magma compressibility calculated using finite difference
-pdiff      = pcc + [-1e6, 1e6];
-rhodiff(1) = CalcRho(t, pdiff(1), m);
-rhodiff(2) = CalcRho(t, pdiff(2), m);
-
-beta_mag = 1/rhocc*(diff(rhodiff)/diff(pdiff));
-beta     = (beta_mag + m.ch.beta_ch);   % system compressibility
+    
+    % find the pressure at the chamber center, which determines density
+    pMax  = 2*(m.ch.depth*m.sig.slope + m.sig.offset);
+    pcc   = fzero(@(pcc) ChamberCenterPressure(t, pcc, pch, m), [pch, pMax]);
+    rhocc = CalcRho(t, pcc, m);
+    
+    % magma compressibility calculated using finite difference
+    pdiff      = pcc + [-1e6, 1e6];
+    rhodiff(1) = CalcRho(t, pdiff(1), m);
+    rhodiff(2) = CalcRho(t, pdiff(2), m);
+    
+    beta_mag = 1/rhocc*(diff(rhodiff)/diff(pdiff));
+    beta     = (beta_mag + m.ch.beta_ch);   % system compressibility
 end
 
 end
@@ -917,9 +936,9 @@ function [rho] = CalcRho (t, p, m)
 
 [mw, phi_g] = calc_ch_gas(t, p, m);
 
-% Volatile mass fractions. 
+% Volatile mass fractions.
 [Chi_hd, Chi_cd] = solubility_liu_explicit(p, m.T, mw);
-Chi_hd = 1e-2*Chi_hd; 
+Chi_hd = 1e-2*Chi_hd;
 Chi_cd = 1e-6*Chi_cd;
 c1 = 1./(1 - Chi_hd - Chi_cd);    %editted c1,c2 Oct 2, 2017
 c2 = 1./(1 + Chi_hd.*c1*(m.rho_l/m.rho_hd) + Chi_cd.*c1*(m.rho_l/m.rho_cd));
@@ -932,13 +951,13 @@ phi_s = chi_s.*m.rho_l.*c12.*(1 - phi_g)./...
     (m.rho_s + chi_s.*(c12*m.rho_l - m.rho_s));
 
 % liquid fraction
-phi_l = (1 - phi_s - phi_g).*c2; 
+phi_l = (1 - phi_s - phi_g).*c2;
 
-% gas density 
-rho_g = p.*(mw./(m.Rw*m.T) + (1 - mw)./(m.Rc*m.T)); 
+% gas density
+rho_g = p.*(mw./(m.Rw*m.T) + (1 - mw)./(m.Rc*m.T));
 
 % bulk density
-rho = m.rho_l*phi_l.*c1 + m.rho_s.*phi_s + rho_g.*phi_g; 
+rho = m.rho_l*phi_l.*c1 + m.rho_s.*phi_s + rho_g.*phi_g;
 
 end
 
@@ -946,7 +965,7 @@ function [chi] = calc_chi_s (pf,p)
 % similar to pfl_val in smf_rad
 % [chi] = tdcFV('calc_chi_s',m.pf,1e-6*s.p);
 %
-% -- Inputs -- 
+% -- Inputs --
 %  pf:      Structure containing pf.p[MPA],pf.chi[fraction],pf.pp(polynomial)
 %  p:       Pressure [MPA]
 
@@ -969,7 +988,7 @@ kmag = m.k_lat.*(phi_g.^3).*degas;
 if (m.klw.use && any(kmag > 0))
     k_lat_wall = m.klw.top./(1e-3*abs(z)).^m.klw.mi;
     klat = (m.klw.L+m.R)./(m.R./kmag + m.klw.L./k_lat_wall);
-else 
+else
     klat = zeros(size(phi_g));
 end
 
@@ -983,14 +1002,14 @@ end
 
 
 function k_lat = calc_k_lat (m, z, phi_g, magma_on)
-  kmag = calc_k(m, phi_g, magma_on);
-  % What was computed so far is k_lat_magma. If ~isinf(k_lat_wall), then the
-  % wall has to be accounted for.
-  if (m.klw.use && any(kmag > 0))
+kmag = calc_k(m, phi_g, magma_on);
+% What was computed so far is k_lat_magma. If ~isinf(k_lat_wall), then the
+% wall has to be accounted for.
+if (m.klw.use && any(kmag > 0))
     k_lat_magma = kmag;
     k_lat_wall = m.klw.top./(1e-3*abs(z)).^m.klw.mi;
     k_lat = (m.klw.L+m.R)./(m.R./k_lat_magma + m.klw.L./k_lat_wall);
-  end
+end
 end
 
 function k = calc_k (m, phi_g, magma_on)
@@ -998,15 +1017,15 @@ k = m.k_lat.*(phi_g.^3).*magma_on;
 end
 
 function klw = klw_init (oklw)
-  klw.use = ~isinf(oklw.top);
-  if (~klw.use) return; end
-  klw.top = oklw.top;
-  klw.mi = oklw.mi;
-  klw.L = oklw.L;
+klw.use = ~isinf(oklw.top);
+if (~klw.use) return; end
+klw.top = oklw.top;
+klw.mi = oklw.mi;
+klw.L = oklw.L;
 end
 
 function b = is_thr_perm (k_lat_model)
-  b = any(k_lat_model == [2 3]);
+b = any(k_lat_model == [2 3]);
 end
 
 function [eta,eta_m,eta_phi] = calc_eta (c, phi, T, meltmodel, gdot)
@@ -1068,7 +1087,7 @@ eta = eta_m.*eta_phi;
 end
 
 function [h2o_d co2_d h2o_e co2 co2_e] = solubility_liu_explicit ( ...
-  p, T, Mh, h2o, B)
+    p, T, Mh, h2o, B)
 %  Given pressure, temperature, mole fraction H20, and total H20, this function
 %  will calculate H2O and CO2 solubilities (this does not require the total
 %  water). Then, using total water and the relationship between mole fractions
@@ -1092,27 +1111,27 @@ function [h2o_d co2_d h2o_e co2 co2_e] = solubility_liu_explicit ( ...
 %  h2o_d            Dissolved water [WT%]
 %  h2o_e            Exsolved water [WT%]
 %  co2              Total CO2 [PPM]
-%  co2_d            Dissolved CO2 [PPM] 
+%  co2_d            Dissolved CO2 [PPM]
 %  co2_e            Exsolved CO2 [PPM]
-%  
+%
 % April 18, 2013: Initial coding (based on much earlier code) (KA)
 
-  % Convert to MPa (as required by Liu expressions).
-  p = p*1e-6;
+% Convert to MPa (as required by Liu expressions).
+p = p*1e-6;
 
-  % Precompute for speed.
-  Pw = p.*Mh;
-  Pc = p.*(1-Mh);
-  sqrtPw = sqrt(Pw);
-  Pw15 = Pw.*sqrtPw; % Pw^1.5
+% Precompute for speed.
+Pw = p.*Mh;
+Pc = p.*(1-Mh);
+sqrtPw = sqrt(Pw);
+Pw15 = Pw.*sqrtPw; % Pw^1.5
 
-  % These equations require MPa, Kelvin, and return wt% and ppm in weight.
-  % Assuming saturation!
-  h2o_d = (354.94*sqrtPw + 9.623*Pw - 1.5223*Pw15)/T + ...
-          0.0012439*Pw15 + Pc.*(-1.084e-4*sqrtPw - 1.362e-5*Pw);
-  co2_d = Pc.*(5668 - 55.99*Pw)/T + Pc.*(0.4133*sqrtPw + 2.041e-3*Pw15);
-  
-  if (nargin == 5)
+% These equations require MPa, Kelvin, and return wt% and ppm in weight.
+% Assuming saturation!
+h2o_d = (354.94*sqrtPw + 9.623*Pw - 1.5223*Pw15)/T + ...
+    0.0012439*Pw15 + Pc.*(-1.084e-4*sqrtPw - 1.362e-5*Pw);
+co2_d = Pc.*(5668 - 55.99*Pw)/T + Pc.*(0.4133*sqrtPw + 2.041e-3*Pw15);
+
+if (nargin == 5)
     h2o_e = h2o - h2o_d; % exsolved water
     co2_e = (h2o_e/B.*(1 - Mh)./Mh)*1e-4; % 1e-4 converts from wt% to ppm
     co2 = co2_d + co2_e;
@@ -1120,7 +1139,7 @@ function [h2o_d co2_d h2o_e co2 co2_e] = solubility_liu_explicit ( ...
     Ih = h2o < h2o_d;
     Ic = co2 < co2_d;
     if (sum(Ih + Ic) > 0), keyboard; warning('Melt is undersaturated!'); end
-  end
+end
 end
 
 
