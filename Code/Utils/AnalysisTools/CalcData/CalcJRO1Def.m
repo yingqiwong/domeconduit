@@ -38,12 +38,9 @@ if plot_opt == 1
     % propagate error from east and north into radial displacements
     xy = llh2local([MSH_GPS.stations(4).lon; MSH_GPS.stations(4).lat; 0], [-122.1888;46.1991;0]);
     [th,~] = cart2pol(xy(1), xy(2));
-    RotMat = [cos(th), sin(th); -sin(th), cos(th)];
-    for ti = 1:length(MSH_GPS.stations(4).Date)
-        tmp = RotMat*diag(MSH_GPS.stations(4).data(ti,4:5),0)*RotMat';
-        RadErr(ti) = tmp(1);
-    end
-    
+    eRTZ = xyz2rtz(MSH_GPS.stations(4).data(:,4:5), th);
+    RadErr = eRTZ(:,1);
+
     RadErr(RadErr > (mean(RadErr)+std(RadErr))) = nan;
     
     figure;
