@@ -26,6 +26,7 @@ optsBE = optimoptions('fsolve','JacobPattern',dFdy,'Display','off',...
     'StepTolerance',1e-10,...
     'Algorithm','trust-region','SubproblemAlgorithm','factorization');
 
+m.tStart = tic;
 if (dtvary==1)
     [be, flag] = BE_dtVary(y0, z, m, optsBE);
 else
@@ -136,6 +137,7 @@ while t(ti) < m.Tspan(2)
         des(t(ti), dt(ti-1), yN, yMat(:,ti-1), z, m), yMat(:,ti-1), optsBE);
     
     if any(any(imag(yMat(:,ti)))) || any(any(yMat(:,ti)<0)), exitflag = -10; end
+    if (toc(m.tStart) - m.slv.max_time)>0, break; end % time out
     if exitflag<=0, break; end
     
     % find next time step using dpdt at t(ti)
