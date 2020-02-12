@@ -190,7 +190,7 @@ tm.tdep.p_bot_tvary = 1;
 tm.tdep.h2och_tvary = 0;
 
 
-tm.Tspan = ConvertYearToSec([0,4]); % years converted to seconds
+tm.Tspan = ConvertYearToSec([0,5]); % years converted to seconds
 tm.Nt    = 201;
 
 % some things for finding events
@@ -199,8 +199,8 @@ tm.Nt    = 201;
 tm.vfrac = 0;
 tm.vmin  = 1e-9; % stop integration if velocity drops below threshold
 tm.slv.max_time  = 1000;
-tm.slv.max_order = 5; % default for ode15s
-tm.slv.dtFixed   = 1;
+tm.slv.max_order = 5; % default for ode15s is 5
+tm.slv.dtFixed   = 0;
 
 % additional options for backward euler method
 tm.be.use    = use_be;
@@ -216,19 +216,19 @@ if (mms) % for method of manufactured solutions
     tm.v0 = 1e-3;
     
 else  % for actual solutions
-    if (use_be) % using backward Euler method
+%     if (use_be) % using backward Euler method
         tm.slv.sy = zeros(4,1);
         tm.slv.sy(tm.blk.is.p)     = 0.1*10^floor(log10(ss.y(1)));
         tm.slv.sy(tm.blk.is.v)     = 10^floor(log10(ss.y(2)));
-        tm.slv.sy(tm.blk.is.phi_g) = 1;
+        tm.slv.sy(tm.blk.is.phi_g) = 10;
         tm.slv.sy(tm.blk.is.mw)    = 1;
-    else % using ode15s here
-        tm.slv.sy = zeros(4,1);
-        tm.slv.sy(tm.blk.is.p)     = 10^ceil(log10(ss.y(1)));
-        tm.slv.sy(tm.blk.is.v)     = 10^ceil(log10(ss.y(2)));
-        tm.slv.sy(tm.blk.is.phi_g) = 1;
-        tm.slv.sy(tm.blk.is.mw)    = 1;
-    end
+%     else % using ode15s here
+%         tm.slv.sy = zeros(4,1);
+%         tm.slv.sy(tm.blk.is.p)     = 10^ceil(log10(ss.y(1)));
+%         tm.slv.sy(tm.blk.is.v)     = 10^ceil(log10(ss.y(2)));
+%         tm.slv.sy(tm.blk.is.phi_g) = 1;
+%         tm.slv.sy(tm.blk.is.mw)    = 1;
+%     end
     
     % some time integration options
     tm.slv.reltol = 1e-5;
@@ -324,7 +324,7 @@ while (1)
     else
         t  = [t, tdtmp.x];
         y  = [y, tdtmp.y];
-        yp = [yp, tdtmp.yp];
+%         yp = [yp, tdtmp.yp];
     end
     
     % Made it to end of integration time? If so, we're done
@@ -559,8 +559,8 @@ if m.plug_gas_loss
         plugdepth = find(vvfrac < m.newtonian.vvfrac_thr, 1);
     end
     
-    %     pluglog  = 1./(1+exp(-0.05*(z-z(plugdepth))));
-    pluglog = zeros(size(p)); pluglog(z>z(plugdepth)) = 1;
+    pluglog  = 1./(1+exp(-0.05*(z-z(plugdepth))));
+%     pluglog = zeros(size(p)); pluglog(z>z(plugdepth)) = 1;
     
     [h2ogasn2, h2ogass2] = tdcFV('get_FaceVals', 1./(1+E.Gamma).*phi_g,  m.dQUICKn);
     h2o.plug = E.rho_g(2:end)/dz.*(h2ogasn2(2:end).*vn - h2ogass2(2:end).*vs);
@@ -657,7 +657,7 @@ if m.Nv == 3, mw = m.mw_ch;
 else,         mw = y(is.mw:m.Nv:end); end
 
 zphigc = calc_zphigc(t, phi_g, m);
-degas  = 1./(1+exp(-0.05*(z-z(zphigc))));
+degas  = 1./(1+exp(-0.04*(z-z(zphigc))));
 
 % if m.PlugDepth == 0, degas = zeros(size(p)); degas(z>z(zphigc)) = 1; end
 

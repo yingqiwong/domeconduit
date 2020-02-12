@@ -18,12 +18,13 @@ be = []; flag = -14;
 
 % include the pattern of the jacobian for speed.
 b = ones(length(y0),40);
-dFdy = spdiags(b, -20:19, length(y0), length(y0));
+% dFdy = spdiags(b, -20:19, length(y0), length(y0));
+dFdy = spdiags(b, -10:9, length(y0), length(y0));
 
 % options for fsolve
 optsBE = optimoptions('fsolve','JacobPattern',dFdy,'Display','off',...
-    'OptimalityTolerance', 1e-10, 'FunctionTolerance',1e-10,...
-    'StepTolerance',1e-10,...
+    'OptimalityTolerance', 1e-15, 'FunctionTolerance',1e-15,...
+    'StepTolerance',1e-15,...
     'Algorithm','trust-region','SubproblemAlgorithm','factorization');
 
 m.tStart = tic;
