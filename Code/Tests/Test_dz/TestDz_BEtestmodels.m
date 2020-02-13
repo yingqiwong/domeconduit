@@ -19,7 +19,7 @@ CO2Err = (CO2(:,1:end-1) - CO2(:,end))./CO2(:,end);
 
 %% choose a few files to evaluate
 
-[~, tmpinds] = maxk(VolErr,20);
+[~, tmpinds] = maxk(abs(VolErr),10);
 inds = unique(tmpinds(:));
 
 %% define some variables
