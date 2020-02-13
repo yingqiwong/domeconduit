@@ -90,7 +90,7 @@ end
 save(FileName, 'NzVec', 'dpVec', 'tdRunTime', 'td', 'be', ...
     'tdRunTime', 'beRunTime', 'm', 'mbe', 'PlugDepth', 'zphigc');
 
-fprintf('Finished solution on file #%d.\nSaved in file %s.\n', fi, FileName);
+fprintf('Finished solution, saved in file %s.\n', FileName);
 
 end
 
