@@ -1,12 +1,15 @@
-function [] = PlotComparetdSols (td, m)
+function [] = PlotComparetdSols (td, m, lgdtxt, Nsols)
 
-Nsols = length(td);
-if Nsols > 4
-    fprintf('Plotting first 4 solutions only.\n'); 
-    Nsols = 4;
+if nargin<4
+    Nsols = min([length(td), 4]);
+    fprintf('Plotting first %d solutions only.\n', Nsols);
 end
 
-lineColors = lines(4);
+if nargin<3
+    lgdtxt = repmat({''}, Nsols, 1);
+end
+
+lineColors = parula(Nsols);
 
 figure;
 set(gcf, 'position', [78 406 1355 505], ...
@@ -19,11 +22,11 @@ for isol = 1:Nsols
     tdv = extract_y(td(isol), m(isol));
     
     subplot(241); plot(tdv.tyr, tdv.p(end,:),   'color', lineColors(isol,:));   hold on;
-    subplot(242); plot(tdv.tyr, tdv.v(end,:),   'color', lineColors(isol,:));   hold on;
+    subplot(242); semilogy(tdv.tyr, tdv.v(end,:),   'color', lineColors(isol,:));   hold on;
     subplot(243); plot(tdv.tyr, tdv.phi_g(end,:), 'color', lineColors(isol,:)); hold on;
     subplot(244); plot(tdv.tyr, tdv.mw(end,:),  'color', lineColors(isol,:));   hold on;
     subplot(245); plot(tdv.tyr, tdv.p(1,:),     'color', lineColors(isol,:));   hold on;
-    subplot(246); plot(tdv.tyr, tdv.v(1,:),     'color', lineColors(isol,:));   hold on;
+    subplot(246); semilogy(tdv.tyr, tdv.v(1,:),     'color', lineColors(isol,:));   hold on;
     subplot(247); plot(tdv.tyr, tdv.phi_g(1,:), 'color', lineColors(isol,:));   hold on;
     subplot(248); plot(tdv.tyr, tdv.mw(1,:),    'color', lineColors(isol,:));   hold on;
 
@@ -38,7 +41,7 @@ subplot(245); title('(e) Pressure at base (MPa)'); xlabel('Time (year)');
 subplot(246); title('(f) Velocity at base (m/s)'); xlabel('Time (year)');
 subplot(247); title('(g) Porosity at base (%)'); xlabel('Time (year)');
 subplot(248); title('(h) Mole fraction water at base'); xlabel('Time (year)');
-
+legend({lgdtxt}, 'location', 'best', 'box', 'off');
 
 
 
@@ -68,7 +71,8 @@ subplot(144); title('(d) Mole fraction water');
 CalcExtrusionVolume(td(1), m(1), 1); hold on;
 for isol = 2:Nsols
     tyr = ConvertSecToYear(td(isol).x);
-    Vol = CalcExtrusionVolume(td(isol), m(isol), 0);
+%     Vol = CalcExtrusionVolume(td(isol), m(isol), 0);
+    Vol = td(isol).y(end,:);
     plot(tyr, Vol, 'linewidth', 2, 'color', lineColors(isol,:)); 
 end
 
