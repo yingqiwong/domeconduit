@@ -55,16 +55,21 @@ Np = length(dpVec);
 td(Nz,1)  = struct('x', [], 'y', [], 'z', [], 'yp', [], 'xe', [], 'ye', [], 'ie', []);
 be(Nz,Np) = struct('x', [], 'y', [], 'z', [], 'yp', [], 'xe', [], 'ye', [], 'ie', []);
 
-tdRunTime = zeros(Nz,1);
-beRunTime = zeros(Nz,Np);
-PlugDepth = zeros(Nz,1);
+tdRunTime = nan(Nz,1);
+beRunTime = nan(Nz,Np);
+PlugDepth = nan(Nz,1);
 
 o = FillFields(mNames, model, LogParam);
 
 for zi = 1:Nz
     fprintf('Nz for ss = %d.\n', NzVec(zi));
     
-    [tdtmp, m, tdRTtmp, betmp, mbe, beRTtmp] = CompareTDBE_dpVec('main', o, dpVec, 'Nz', NzVec(zi));
+    try
+        [tdtmp, m, tdRTtmp, betmp, mbe, beRTtmp] = CompareTDBE_dpVec('main', o, dpVec, 'Nz', NzVec(zi));
+    catch
+        fprintf('Something wrong with model with filename %s...\n',FileName);
+        continue;
+    end
     
     if isempty(tdtmp), continue; end
     
