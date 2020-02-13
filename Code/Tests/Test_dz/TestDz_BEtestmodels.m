@@ -59,6 +59,9 @@ tdRunTime = nan(Nz,1);
 beRunTime = nan(Nz,Np);
 PlugDepth = nan(Nz,1);
 
+m = [];
+mbe = [];
+
 o = FillFields(mNames, model, LogParam);
 
 for zi = 1:Nz
