@@ -1,8 +1,9 @@
 
 clear all;
+dbstop if error
+
 AddPaths;
 addpath('../CompareTDBE/');
-
 BEFolder = '../../../../ModelTestFiles/TestBE/';
 addpath(BEFolder);
 
@@ -18,55 +19,66 @@ CO2Err = (CO2(:,1:end-1) - CO2(:,end))./CO2(:,end);
 
 %% choose a few files to evaluate
 
-[~, tmpinds] = maxk(VolErr,10);
+[~, tmpinds] = maxk(VolErr,20);
 inds = unique(tmpinds(:));
 
 %% define some variables
 
 Nf = length(FileNames);
-NzVec = [301, 401];
-Nz = length(NzVec);
+NzVec = [201, 301, 401, 601, 801]
 
-% dpVec2 = dpVec(2:3);
-Np = length(dpVec);
 o = tdcFV('setdef');
 mNames = fieldnames(o);
 
 %% run test
 
-for fi = inds'
+NumWorkers = 10;
+parpool(NumWorkers);
+
+parfor (i = 1:length(inds), NumWorkers)
+    fi = inds(i);
     
     fprintf('Running solution on file #%d...\n', fi);
+    FileName = [BEFolder FileNames{fi}(1:end-4) '_dzbetd.mat'];
+    RunModels(FileName, mNames, Model(fi,:), LogParam, NzVec, dpVec)
     
-    td(Nz)    = struct('x', [], 'y', [], 'z', [], 'yp', [], 'xe', [], 'ye', [], 'ie', []);
-    be(Nz,Np) = struct('x', [], 'y', [], 'z', [], 'yp', [], 'xe', [], 'ye', [], 'ie', []);
-    
-    tdRunTime = zeros(Nz,1);
-    beRunTime = zeros(Nz,Np);
+end
+delete(gcp('nocreate'))
+ 
+%% functions
 
-    o = FillFields(mNames, Model(fi,:), LogParam);
-    
-    for zi = 1:Nz
-        fprinf('Nz for ss = %d.\n', NzVec(zi));
-        
-        [tdtmp, m, tdRTtmp, betmp, mbe, beRTtmp] = CompareTDBE_dpVec('main', o, dpVec, 'Nz', NzVec(zi));
-        
-        if isempty(tdtmp), continue; end
-        
-        td(zi)   = tdtmp;
-        be(zi,:) = betmp;
-        
-        tdRunTime(zi)   = tdRTtmp;
-        beRunTime(zi,:) = beRTtmp;
-    end
-    
-    NewFileName = [BEFolder FileNames{fi}(1:end-4) '_dzbetd.mat'];
-    
-    save(NewFileName, 'NzVec', 'dpVec', 'tdRunTime', 'td', 'be', ...
-        'tdRunTime', 'beRunTime', 'm', 'mbe');
-    
-    fprintf('Finished solution on file #%d.\nSaved in file %s.\n', ...
-        fi, NewFileName);
+function [] = RunModels (FileName, mNames, model, LogParam, NzVec, dpVec)
 
-    clear td be tdRunTime beRunTime m mbe
+Nz = length(NzVec);
+Np = length(dpVec);
+
+td(Nz,1)  = struct('x', [], 'y', [], 'z', [], 'yp', [], 'xe', [], 'ye', [], 'ie', []);
+be(Nz,Np) = struct('x', [], 'y', [], 'z', [], 'yp', [], 'xe', [], 'ye', [], 'ie', []);
+
+tdRunTime = zeros(Nz,1);
+beRunTime = zeros(Nz,Np);
+PlugDepth = zeros(Nz,1);
+
+o = FillFields(mNames, model, LogParam);
+
+for zi = 1:Nz
+    fprintf('Nz for ss = %d.\n', NzVec(zi));
+    
+    [tdtmp, m, tdRTtmp, betmp, mbe, beRTtmp] = CompareTDBE_dpVec('main', o, dpVec, 'Nz', NzVec(zi));
+    
+    if isempty(tdtmp), continue; end
+    
+    td(zi)   = tdtmp;
+    be(zi,:) = betmp;
+    
+    tdRunTime(zi)   = tdRTtmp;
+    beRunTime(zi,:) = beRTtmp;
+    PlugDepth(zi)   = m.PlugDepth;
+end
+
+save(FileName, 'NzVec', 'dpVec', 'tdRunTime', 'td', 'be', ...
+    'tdRunTime', 'beRunTime', 'm', 'mbe', 'PlugDepth');
+
+fprintf('Finished solution on file #%d.\nSaved in file %s.\n', fi, FileName);
+
 end
