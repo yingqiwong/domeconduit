@@ -195,12 +195,18 @@ end
 function [yNew, mNew, vScale] = CheckVelScales (y, y0, m)
 
 v1 = y(m.blk.is.v)*m.slv.sy(m.blk.is.v);
+NewScale = 10^floor(log10(v1));
 
-mNew = m;
-mNew.slv.sy(mNew.blk.is.v) = 10^floor(log10(v1));
-
-vScale = mNew.slv.sy(mNew.blk.is.v);
-yNew = RescaleVars(y, m, mNew.slv.sy);
+if NewScale == m.slv.sy(m.blk.is.v)
+    mNew = m; yNew = y; vScale = m.slv.sy(m.blk.is.v);
+    return; 
+else
+    mNew = m;
+    vScale = NewScale;
+    mNew.slv.sy(mNew.blk.is.v) = NewScale;
+    yNew = y;
+    yNew(1:m.Nv*m.Nz) = RescaleVars(y(1:m.Nv*m.Nz), m, mNew.slv.sy);
+end
 
 end
 

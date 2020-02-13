@@ -174,7 +174,8 @@ function [phigcVec,plugdepth] = calc_phigc_plugdepth (td, m, plot_opt)
 
 % calculate pressure gradient across faces.
 % this has length Nz-1 since we only have (Nz-1) interior faces
-p = td.y(m.blk.is.p:m.Nv:end,:)*m.slv.sy(m.blk.is.p);
+Nvz = m.Nz*m.Nv;
+p = td.y(m.blk.is.p:m.Nv:Nvz,:)*m.slv.sy(m.blk.is.p);
 dz = td.z(2) - td.z(1);
 dpdz = 1/dz*(p(2:end,:) - p(1:end-1,:));
 
@@ -182,7 +183,7 @@ phigcVec  = zeros(length(td.x),1);
 plugdepth = zeros(length(td.x),1);
 
 for ti = 1:length(td.x)
-    yscl = td.y(:,ti).*repmat(m.slv.sy(1:m.Nv),length(td.z),1);
+    yscl = td.y(1:Nvz,ti).*repmat(m.slv.sy(1:m.Nv),length(td.z),1);
     E = tdcFV('calc_exprs',td.x(ti),yscl,td.z',m,dpdz(:,ti),1);
     phigcVec(ti)  = E.zphigc;
     plugdepth(ti) = E.plugdepth;

@@ -4,16 +4,25 @@ end
 
 function [td, be] = CalcBEData (td, m, be, mbedef)
 
-[td.Vol, td.Def, td.CO2] = CalcAllData(td, m, 0);
+[td.Vol, td.Def, td.CO2] = CalcData(td, m);
 td.tdv = extract_y(td,m);
 
 for mi = 1:numel(be)
     
     if isempty(be(mi).x), continue; end
         
-    [be(mi).Vol, be(mi).Def, be(mi).CO2] = CalcAllData(be(mi), mbedef, 0);
+    [be(mi).Vol, be(mi).Def, be(mi).CO2] = CalcData(be(mi), mbedef);
     be(mi).bev = extract_y(be(mi),mbedef);
 end
+end
+
+function [vol, def, co2] = CalcData (td, m)
+vol = td.y(end,:);
+
+[ur, ut, uz] = CalcJRO1Def(td, m, 0); 
+def = 1e3*ur;
+
+[~,co2] = CalcGasEmissions(td,m,0);
 end
 
 function [] = PlotCompareTDBE (td, m, be, mbedef, dpVec)
@@ -69,6 +78,7 @@ for ibe = beplt
     plot(be(ibe).bev.tyr, be(ibe).Vol, '+-');
 end
 hold off;
+ylim([0,1.2*td.Vol(end)])
 title('Extruded volume');
 
 subplot(236);

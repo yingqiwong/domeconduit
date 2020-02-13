@@ -230,19 +230,20 @@ else  % for actual solutions
 %         tm.slv.sy(tm.blk.is.mw)    = 1;
 %     end
     
-    % some time integration options
-    tm.slv.reltol = 1e-5;
-    tm.slv.abstol = [1e-20;1e-10;1e-10;1e-10];      % different abstol for p,v,phi_g
-    
     z = -ss.z(1:2:end)';
     dz = abs(ss.z(2) - ss.z(1));
     tm.Nz = length(z);
+    
+    % some time integration options
+    tm.slv.reltol = 1e-5;
+    tm.slv.abstol = [repmat([1e-20;1e-10;1e-10;1e-10],tm.Nz,1); 1e-10];      % different abstol for p,v,phi_g
     
     % fill in initial conditions
     ssy = reshape(ss.y(1:tm.Nv,1:2:end), tm.Nz*tm.Nv, 1);
     v   = [ss.y(2,2:2:end-1),interp1(ss.z, ss.y(2,:), -dz, 'pchip', 'extrap')];
     ssy(tm.blk.is.v:tm.Nv:end) = v;
-    y0 = ssy./repmat(tm.slv.sy(1:tm.Nv),length(z),1);
+    
+    y0 = [ssy./repmat(tm.slv.sy(1:tm.Nv),length(z),1); 0];
     
     tm.v0 = y0(2);
     tm.zphigc = find(ss.state(1,1:2:end)==1,1);
@@ -271,18 +272,15 @@ function [td, flag] = des_run (y0, z, m, MassOn)
 
 if (nargin<4), MassOn = 1; end
 
-% repeat abstol vector for all depth steps
-abstol = repmat(m.slv.abstol(1:m.Nv),length(z),1);
-
 % specify Jacobian pattern for speed.
 % Could be sparser if desired, here overpredicting number of non-zero elements
-Npts = length(z);
-b = ones(m.Nv*Npts,20);
-dFdy = spdiags(b, -10:9, m.Nv*Npts, m.Nv*Npts);
+Nvz = m.Nv*m.Nz;
+b = ones(length(y0),20);
+dFdy = spdiags(b, -10:9, length(y0), length(y0));
 
 if MassOn == 1
     % new one with symbolic inputs
-    options = odeset('RelTol',m.slv.reltol, 'AbsTol',abstol,...
+    options = odeset('RelTol',m.slv.reltol, 'AbsTol',m.slv.abstol,...
         'Mass', @(t,y) calc_mass_matrix(t,y,z,m),'MassSingular', 'yes',...
         'MStateDependence', 'strong', 'MaxOrder', m.slv.max_order, ...
         'Events', @(t,y) des_event (t, y, z, m), 'Jpattern', dFdy);
@@ -291,8 +289,8 @@ else
     is = m.blk.is;
     Mtemp = zeros(length(y0));
     Mtemp(is.p,is.p) = 1*m.slv.sy(is.p);
-    Mtemp(end-m.Nv+is.p,end-m.Nv+is.p) = 1*m.slv.sy(is.p);
-    options = odeset('RelTol',m.slv.reltol, 'AbsTol',abstol,...
+    Mtemp(end-m.Nv+is.p,Nvz-m.Nv+is.p) = 1*m.slv.sy(is.p);
+    options = odeset('RelTol',m.slv.reltol, 'AbsTol',m.slv.abstol,...
         'Mass', Mtemp,'MassSingular', 'yes',...
         'Jpattern', dFdy);
 end
@@ -362,7 +360,7 @@ while (1)
     m.v0 = y0(2);
     
     % rescale to real units
-    yscl    = y0.*repmat(m.slv.sy(1:m.Nv),length(z),1);
+    yscl    = y0(1:Nvz).*repmat(m.slv.sy(1:m.Nv),length(z),1);
     p       = yscl(m.blk.is.p:m.Nv:end);
     
     % calculate pressure gradient across faces.
@@ -418,8 +416,9 @@ if (0)
 end
 
 is = m.blk.is;
-yscl = y.*repmat(m.slv.sy(1:m.Nv),length(z),1);
-p = yscl(is.p:m.Nv:end);
+Nvz  = m.Nv*m.Nz;
+yscl = y(1:Nvz).*repmat(m.slv.sy(1:m.Nv),length(z),1);
+p = yscl(is.p:m.Nv:Nvz);
 
 % make vector of chibreaks and coefbreaks for calculating chi_s in the
 % mass matrix function
@@ -441,18 +440,21 @@ end
 
 % interior points
 [Diags, k] = MassMatFunc_getDiags(yscl,m,chibreaks,coefbreak);
-MassMat    = spdiags(Diags, k, m.Nv*m.Nz, m.Nv*m.Nz);
+MassMat    = sparse(length(y), length(y));
+MassMat(1:Nvz, 1:Nvz) = spdiags(Diags, k, Nvz, Nvz);
 
 % equations at boundary/boundary conditions
-MassMat(is.p, :)    = [1*m.slv.sy(is.p), zeros(1,m.Nv*length(z)-1)];
+MassMat(is.p, :)    = 0;
+MassMat(is.p, is.p) = 1*m.slv.sy(is.p);
 MassMat(is.phi_g,:) = 0;
 
 zi = length(z);
 Row = m.Nv*(zi-1);
 MassMat(Row+is.v, Row+is.p) = 1*m.slv.sy(is.p);
+MassMat(end,end) = 1e6;
 
 if m.Nv == 4
-    MassMat(is.mw,:) = zeros(1,m.Nv*length(z));
+    MassMat(is.mw,:) = 0;
 end
 end
 
@@ -488,7 +490,7 @@ function dydt = des (t, y, z, m)
 %
 % -- Inputs --
 %  t:   time
-%  y:   vector of 4 unknowns: [p,v,phi_g,mw]
+%  y:   vector of 4 unknowns: [p,v,phi_g,mw]x Nz + Flux
 %  z:   depth of evaluation
 %  m:   model parameters
 %
@@ -497,11 +499,12 @@ function dydt = des (t, y, z, m)
 
 is = m.blk.is;
 Nv = m.Nv;
+Nvz= m.Nv*m.Nz;
 dz = abs(z(2) - z(1));
 dydt = zeros(size(y));
 
 % rescale to real units
-yscl    = y.*repmat(m.slv.sy(1:m.Nv),length(z),1);
+yscl    = y(1:Nvz).*repmat(m.slv.sy(1:m.Nv),length(z),1);
 p       = yscl(is.p:Nv:end);
 v       = yscl(is.v:Nv:end);
 phi_g   = yscl(is.phi_g:Nv:end);
@@ -534,10 +537,10 @@ h2o.gas = 1/dz*(h2ogasn(2:end).*(vn+vgn(2:end)) - h2ogass(2:end).*(vs+vgs(2:end)
     + E.h2o.lat(2:end);
 
 % interior points
-dydt(Nv+is.p:Nv:end)     = -1/dz*(nvn(2:end).*vn - nvs(2:end).*vs);
-dydt(Nv+is.phi_g:Nv:end) = -h2o.liq - h2o.gas;
+dydt(Nv+is.p:Nv:Nvz)     = -1/dz*(nvn(2:end).*vn - nvs(2:end).*vs);
+dydt(Nv+is.phi_g:Nv:Nvz) = -h2o.liq - h2o.gas;
 
-dydt(is.v:Nv:end-Nv) = v(1:end-1) - E.v.vv - E.v.vf;
+dydt(is.v:Nv:Nvz-Nv) = v(1:end-1) - E.v.vv - E.v.vf;
 
 if m.Nv == 4
     [co2liqn, co2liqs] = tdcFV('get_FaceVals', E.co2.liq, m.dQUICKn);
@@ -548,7 +551,7 @@ if m.Nv == 4
         + E.co2.lat(2:end);
     
     
-    dydt(Nv+is.mw:Nv:end) = -co2.liq - co2.gas;
+    dydt(Nv+is.mw:Nv:Nvz) = -co2.liq - co2.gas;
 end
 
 if m.plug_gas_loss
@@ -569,7 +572,7 @@ if m.plug_gas_loss
     indstart = 1;
     h2oind   = (plugdepth-indstart)*Nv + is.phi_g;
     %     dydt(h2oind:m.Nv:end) = waterRHS(plugdepth-indstart:end);
-    dydt(h2oind:m.Nv:end) = (1-pluglog((plugdepth-indstart+1):end)).*dydt(h2oind:m.Nv:end) + ...
+    dydt(h2oind:m.Nv:Nvz) = (1-pluglog((plugdepth-indstart+1):end)).*dydt(h2oind:m.Nv:Nvz) + ...
         pluglog((plugdepth-indstart+1):end).*waterRHS((plugdepth-indstart):end);
     
     if m.Nv == 4
@@ -580,7 +583,7 @@ if m.plug_gas_loss
         co2RHS   = - co2.plug;
         co2ind = (plugdepth-indstart)*Nv + is.mw;
         %         dydt(co2ind:m.Nv:end) = co2RHS(plugdepth-indstart:end);
-        dydt(co2ind:m.Nv:end) = (1-pluglog((plugdepth-indstart+1):end)).*dydt(co2ind:m.Nv:end) + ...
+        dydt(co2ind:m.Nv:Nvz) = (1-pluglog((plugdepth-indstart+1):end)).*dydt(co2ind:m.Nv:Nvz) + ...
             pluglog((plugdepth-indstart+1):end).*co2RHS((plugdepth-indstart):end);
         
     end
@@ -590,7 +593,6 @@ end
 % boundary conditions
 % chamber boundary
 [mw_ch, phi_g_ch] = calc_ch_gas(t, p(1), m);
-% beta = m.ch.beta;
 [beta]            = CalcCompressibility(t, p(1), m);
 dydt(is.phi_g) = phi_g(1) - phi_g_ch;
 if m.Nv == 4,     dydt(is.mw) = mw(1) - mw_ch;  end
@@ -606,10 +608,12 @@ end
 % top boundary condition
 if m.tdep.p_top_tvary == 1
     tcdome = ConvertYearToSec(0.09);
-    dydt(end-Nv+is.v) = 5050188/tcdome*exp(-t/tcdome);
+    dydt(Nvz-Nv+is.v) = 5050188/tcdome*exp(-t/tcdome);
 else
-    dydt(end-Nv+is.v) = 0;
+    dydt(Nvz-Nv+is.v) = 0;
 end
+vExit = 0.5*(v(end-1)+v(end));
+dydt(end) = pi*m.R^2*vExit*(1-phi_g(end));
 
 if isfield(m, 'Source')
     % for method of manufactured solutions
