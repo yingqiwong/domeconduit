@@ -22,6 +22,7 @@ end
 if ssflag~=1, return; end
 
 [m, y0, z] = tdcFV('td_init', ss.m, ss, 0, 0);
+m.Nt = 51;
 % m.PlugDepth = 0;
 
 fprintf('Starting td solution...\n');

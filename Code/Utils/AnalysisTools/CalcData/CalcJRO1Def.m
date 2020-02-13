@@ -28,24 +28,18 @@ end
 
 if plot_opt == 1
     
-    load CleanedData_Oct18.mat
+    load MSH_LSQwSeason_20191104.mat
+    EruptDateLims = LoadEruptionDateLims;
+    JRO1 = Stns(strcmp({Stns.name}, 'JRO1'));
     
-    % load the eruption start date
-    StartDate = datenum(datestr(EruptionStartDate,'dd-mmm-yy',1900));
-    StartYear = datenum(datestr(datetime(2004,1,1),'dd-mmm-yy',1900));
-    StartDateFrac = 2004 + 1/365*(StartDate - StartYear);
-    
-    % propagate error from east and north into radial displacements
-    xy = llh2local([MSH_GPS.stations(4).lon; MSH_GPS.stations(4).lat; 0], [-122.1888;46.1991;0]);
-    [th,~] = cart2pol(xy(1), xy(2));
-    eRTZ = xyz2rtz(MSH_GPS.stations(4).data(:,4:5), th);
-    RadErr = eRTZ(:,1);
+    t = JRO1.DateVS-EruptDateLims(1);
+    t0 = find(t>0,1);
+    d = xyz2rtz(JRO1.posVS(:,1:3), JRO1.Theta);
+    dref = median(d(t0-(1:5), :));
+    e = abs(xyz2rtz(JRO1.posVS(:,4:6), JRO1.Theta));
 
-    RadErr(RadErr > (mean(RadErr)+std(RadErr))) = nan;
-    
     figure;
-    h1 = errorbar(MSH_GPS.stations(4).Date(1:end) - StartDateFrac, ...
-         MSH_GPS.stations(4).rad_clean(1:end) + 16, RadErr(1:end), ...
+    h1 = errorbar(t, d(:,1)-dref(:,1), e(:,1), ...
          '.','color', 0.8*ones(3,1),'linewidth',1,...
          'markersize',5,'markerfacecolor', 'k', 'markeredgecolor', 'k', 'CapSize', 0);
     hold on; 

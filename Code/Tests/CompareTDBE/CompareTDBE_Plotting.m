@@ -54,6 +54,7 @@ for ibe = beplt
     plot(be(ibe).bev.tyr, be(ibe).bev.v(end,:), '+-');
 end
 hold off;
+set(gca,'yscale','log');
 title('Exit velocity');
 
 subplot(233);
@@ -86,7 +87,7 @@ plot(td.tdv.tyr, td.CO2, '-'); hold on;
 for ibe = beplt
     plot(be(ibe).bev.tyr, be(ibe).CO2, '+-');
 end
-% set(gca,'yscale','log');
+set(gca,'yscale','log');
 hold off;
 title('CO2 emissions');
 

@@ -9,14 +9,11 @@ if nargin<3
     lgdtxt = repmat({''}, Nsols, 1);
 end
 
-lineColors = parula(Nsols);
+lineColors = parula(Nsols+1);
 
 figure;
 set(gcf, 'position', [78 406 1355 505], ...
-    'DefaultLineLineWidth',2, ...
-    'DefaultAxesColorOrder', [0,0,1],...
-    'DefaultAxesLineStyleOrder','-|--+|:^|-.x',...
-    'DefaultLineMarkerSize',3)
+    'DefaultLineLineWidth',2, 'DefaultLineMarkerSize',3)
 
 for isol = 1:Nsols
     tdv = extract_y(td(isol), m(isol));
@@ -47,10 +44,7 @@ legend({lgdtxt}, 'location', 'best', 'box', 'off');
 
 figure;
 set(gcf, 'position', [78 406 1355 505], ...
-    'DefaultLineLineWidth',2, ...
-    'DefaultAxesColorOrder', [0,0,1],...
-    'DefaultAxesLineStyleOrder','-|--+|:^|-.x',...
-    'DefaultLineMarkerSize',3)
+    'DefaultLineLineWidth',2, 'DefaultLineMarkerSize',3)
 for isol = 1:Nsols
     tdv = extract_y(td(isol), m(isol));
     
