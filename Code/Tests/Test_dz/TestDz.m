@@ -15,11 +15,6 @@ addpath(BEFolder);
 load TestBE_manydp_Info.mat
 LogParam = zeros(1,12);
 
-VelErr = (Vel(:,1:end-1) - Vel(:,end))./Vel(:,end);
-VolErr = (Vol(:,1:end-1) - Vol(:,end))./Vol(:,end);
-DefErr = (Def(:,1:end-1) - Def(:,end))./Def(:,end);
-CO2Err = (CO2(:,1:end-1) - CO2(:,end))./CO2(:,end);
-
 %% define some variables
 
 Nf = length(FileNames);
@@ -38,7 +33,7 @@ parfor (fi = 1:Nf, NumWorkers)
     fprintf('Running solution on file #%d...\n', fi);
     DzFileName = [DzFolder FileNames{fi}(1:end-4) '_dz_.mat'];
     
-    o = FillFields(mNames, Model(fi,:), zeros(1,12));
+    o = FillFields(mNames, Model(fi,:), LogParam);
     RunConvergence(o, NzVec, DzFileName);
     
 end
