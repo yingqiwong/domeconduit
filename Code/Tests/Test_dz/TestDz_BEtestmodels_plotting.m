@@ -140,7 +140,7 @@ for zi = 1:length(NzTD)
 end
 
 
-%% plot extruded volue as function of number of time points
+%% plot extruded volume error as function of number of time points
 figure;
 colors = parula(length(dpVec));
 set(gcf,'Position',[514   422   1100   386]);

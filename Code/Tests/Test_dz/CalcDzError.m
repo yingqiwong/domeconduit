@@ -17,12 +17,17 @@ load(ModelFiles{1});
 Nz = length(NzVec);
 
 Model   = nan(Nf,12);
-RT      = nan(Nz,  Nf); 
-v0      = nan(Nz-1,Nf);
-VelErr  = nan(Nz-1,Nf);
-VolErr  = nan(Nz-1,Nf);
-DefErr  = nan(Nz-1,Nf);
-CO2Err  = nan(Nz-1,Nf);
+RT      = nan(Nz,Nf); 
+Solved  = nan(Nz,Nf);
+v0      = nan(Nz,Nf);
+VelErr  = nan(Nz,Nf);
+VolErr  = nan(Nz,Nf);
+DefErr  = nan(Nz,Nf);
+CO2Err  = nan(Nz,Nf);
+VelEnd  = nan(Nz,Nf);
+VolEnd  = nan(Nz,Nf);
+DefEnd  = nan(Nz,Nf);
+CO2Stt  = nan(Nz,Nf);
 
 for fi = 1:Nf
     load([ModelFiles{fi}]);
@@ -32,30 +37,52 @@ for fi = 1:Nf
     Model(fi,:) = struct2array(o);
     RT(:,fi)    = tdRunTime;
     
-    % calc data for max discretization model (assume to be true)
-    if ~isempty(td(end).x)
-        [v0(end,fi), VelTrue, VolTrue, DefTrue, CO2True] = CalcData(td(end), m, PlugDepth(end), zphigc(end));
-    end
+    Vel = cell(Nz,1);
+    Vol = cell(Nz,1);
+    Def = cell(Nz,1);
+    CO2 = cell(Nz,1);
     
-    for zi = 1:(Nz-1)
+    for zi = 1:Nz
         if ~isempty(td(zi).x)
             if td(zi).x(end) == m.Tspan(2)
-                [v0(zi,fi), Vel, Vol, Def, CO2] = ...
+                [v0(zi,fi), Vel{zi}, Vol{zi}, Def{zi}, CO2{zi}] = ...
                     CalcData(td(zi), m, PlugDepth(zi), zphigc(zi));
                 
-                VelErr(zi,fi) = 100*1/VelTrue(1)*norm(Vel-VelTrue);
-                VolErr(zi,fi) = 100*1/VolTrue(end)*norm(Vol-VolTrue);
-                DefErr(zi,fi) = 100*1/DefTrue(end)*norm(Def-DefTrue);
-                CO2Err(zi,fi) = 100*1/CO2True(1)*norm(CO2-CO2True);
+                Solved(zi,fi) = 1;
+                VelEnd(zi,fi) = Vel{zi}(end);
+                VolEnd(zi,fi) = Vol{zi}(end);
+                DefEnd(zi,fi) = Def{zi}(end);
+                CO2Stt(zi,fi) = CO2{zi}(1);
             end
         end
-        
+    end
+    
+    trueInd = nan;
+    for zi = Nz:-1:1
+        if Solved(zi,fi)==1
+            if isnan(trueInd)
+                VelTrue = Vel{zi};
+                VolTrue = Vol{zi};
+                DefTrue = Def{zi};
+                CO2True = CO2{zi};
+                trueInd = 1;
+            else
+                VelErr(zi,fi) = 100*1/VelTrue(1)*norm(Vel{zi}-VelTrue);
+                VolErr(zi,fi) = 100*1/VolTrue(end)*norm(Vol{zi}-VolTrue);
+                DefErr(zi,fi) = 100*1/DefTrue(end)*norm(Def{zi}-DefTrue);
+                CO2Err(zi,fi) = 100*1/CO2True(1)*norm(CO2{zi}-CO2True);
+            end
+        else
+            continue; 
+        end
     end
 
 end
 
-save(OutFileName, 'NzVec', 'Model', 'RT', 'v0', 'VelErr',...
-    'VolErr', 'DefErr', 'CO2Err', 'ModelFiles')
+save(OutFileName, ...
+    'NzVec', 'Model', 'Solved', 'RT', 'v0', 'ModelFiles',...
+    'VelErr', 'VolErr', 'DefErr', 'CO2Err', ...
+    'VelEnd', 'VolEnd', 'DefEnd', 'CO2Stt')
 end
 
 function [v0, vEnd, Vol, Def, CO2] = CalcData (td, m, PlugDepth, zphigc)
