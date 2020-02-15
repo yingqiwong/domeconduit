@@ -217,10 +217,18 @@ if (mms) % for method of manufactured solutions
     
 else  % for actual solutions
     tm.slv.sy = zeros(4,1);
-    tm.slv.sy(tm.blk.is.p)     = 0.1*10^floor(log10(ss.y(1)));
-    tm.slv.sy(tm.blk.is.v)     = 10^floor(log10(ss.y(2)));
-    tm.slv.sy(tm.blk.is.phi_g) = 1;
-    tm.slv.sy(tm.blk.is.mw)    = 1;
+    if (use_be) % using backward Euler method
+        tm.slv.sy(tm.blk.is.p)     = 0.1*10^floor(log10(ss.y(1)));
+        tm.slv.sy(tm.blk.is.v)     = 10^floor(log10(ss.y(2)));
+        tm.slv.sy(tm.blk.is.phi_g) = 1;
+        tm.slv.sy(tm.blk.is.mw)    = 1;
+    else % using ode15s here
+        tm.slv.sy = zeros(4,1);
+        tm.slv.sy(tm.blk.is.p)     = 10^ceil(log10(ss.y(1)));
+        tm.slv.sy(tm.blk.is.v)     = 10^ceil(log10(ss.y(2)));
+        tm.slv.sy(tm.blk.is.phi_g) = 1;
+        tm.slv.sy(tm.blk.is.mw)    = 1;
+    end
     
     z = -ss.z(1:2:end)';
     dz = abs(ss.z(2) - ss.z(1));

@@ -20,8 +20,8 @@ Nf         = length(ModelFiles);
 
 %% plot one file
 
-ind = randi(Nf,1);
-ind = 16;
+% ind = randi(Nf,1);
+ind = 3;
 ModelFiles{ind}
 load(ModelFiles{ind})
 
@@ -123,12 +123,12 @@ for zi = 1:length(NzTD)
         plot(tdRT(fi)*ones(Nz,1), beRT(:,fi), 'ko-', 'MarkerSize', 10); hold on;
         for idp = 1:Np
             h(idp) = plot(tdRT(fi), beRT(idp,fi), 'o', 'MarkerSize', 10, ...
-                'MarkerFaceColor', colors(idp,:), 'MarkerEdgeColor', colors(idp,:));
+                'MarkerFaceColor', colors(idp,:), 'MarkerEdgeColor', 'k');
         end
     end
     axis tight
     xlabel('td runtime (min)'); ylabel('be runtime(min)');
-    title(['Nz = ' num2str(NzTD(zi))]);
+    title(['Nz = ' num2str(NzTD(zi)), ', Nmodels = ' num2str(sum(~isnan(tdRT)))]);
     set(gca,'YScale','log','XScale','log');
     plot(xlim,xlim,'r-');
 
@@ -152,8 +152,10 @@ for idp = 1:length(dpVec)
         'MarkerFaceColor', colors(idp,:), 'MarkerEdgeColor', 'k');
     hold on;
 end
-hold off; xlim([1,200]);ylim([0.05,10]);
-hl = legend(num2str(1e-6*dpVec'), 'Location', 'best');
+xlim([1,200]);ylim([0.05,10]);
+plot(xlim, fliplr(xlim)*0.1, 'k-');
+hold off;
+hl = legend(num2str(1e-6*dpVec'), 'Location', 'southwest');
 title(hl, 'dp (MPa)');
 xlabel('Number of time points'); ylabel('Volume err %'); grid on;
 
@@ -164,6 +166,7 @@ for idp = 1:length(dpVec)
     hold on;
 end
 xlim([1,200]); ylim([0.05,10]);
+plot(xlim, fliplr(xlim)*0.1, 'k-');
 set(gca,'XScale','log','YScale','log','Box', 'on');
 hold off;
 cb = colorbar; title(cb, 'log10(v0)'); caxis([-4,-1]);
@@ -218,7 +221,58 @@ subplot(122);
 xlabel('Nz'); ylabel('Final JRO1 def err (%)');
 title('Deformation error');
 
+%% plot model parameters for different td dz disc
 
+o = tdcFV('setdef');
+mNames = fieldnames(o);
+LogParam = zeros(length(mNames),1);
+LogParam(10:12) = 1;
+[Nrow, Ncol] = GetSubplotRowCol(length(mNames));
+
+tdRT =  1/60*squeeze(RT(:,1,:));
+tdSolved = ~isnan(tdRT);
+
+figure;
+hAx = tight_subplot(Nrow, Ncol, [0.1,0.05]);
+for mi = 1:length(mNames)
+    axes(hAx(mi));
+    for fi = 1:Nf
+        plot(Model(fi,mi)*ones(1,5), NzTD, 'k-'); hold on;
+        plot(Model(fi,mi)*ones(1,sum(tdSolved(:,fi))), NzTD(tdSolved(:,fi)), ...
+            'ko', 'markerfacecolor', 'b');
+        plot(Model(fi,mi)*ones(1,5-sum(tdSolved(:,fi))), NzTD(~tdSolved(:,fi)),...
+            'rx', 'LineWidth', 2);
+    end
+    if (LogParam(mi)), set(gca,'XScale','log'); end
+    title(mNames{mi});
+    ylim([100,410]);
+end
+
+
+%% load stats for the dz error
+
+clear all
+load TestBE_dzError.mat
+
+%%
+figure;
+set(gcf,'Position', [400,400,1200,350]);
+NzTD   = 0.5*(NzVec-1)+1;
+subplot(131); 
+semilogy(NzTD(1:end-1), VolErr, 'ko-', 'MarkerFaceColor', 'b', 'MarkerSize',8); 
+grid on;
+title('Volume time series error'); xlim([100,302]);
+xlabel('Nz'); ylabel('% error in time series');
+
+subplot(132); 
+semilogy(NzTD(1:end-1), -DefErr, 'ko-', 'MarkerFaceColor', 'b', 'MarkerSize',8); 
+grid on;
+xlabel('Nz'); title('JRO1 def time series error'); xlim([100,302]);
+
+subplot(133); 
+semilogy(NzTD(1:end-1), CO2Err, 'ko-', 'MarkerFaceColor', 'b', 'MarkerSize',8); 
+grid on;
+xlabel('Nz'); title('CO2 time series error'); xlim([100,302]);
 
 
 

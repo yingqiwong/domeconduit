@@ -39,7 +39,7 @@ for zi = 1:Nz
 end
 
 save(FileName, 'NzVec', 'dpVec', 'tdRunTime', 'td', 'be', ...
-    'tdRunTime', 'beRunTime', 'm', 'mbe', 'PlugDepth', 'zphigc');
+    'beRunTime', 'm', 'mbe', 'PlugDepth', 'zphigc');
 
 fprintf('Finished solution, saved in file %s.\n', FileName);
 

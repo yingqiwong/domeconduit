@@ -18,7 +18,6 @@ Nz = length(NzVec);
 Np = length(dpVec);
 
 Model = nan(Nf,12);
-
 RT   = nan(Nz,Np+1,Nf); % first column is td solution
 beNt = nan(Nz,Np  ,Nf);
 v0   = nan(Nz,Np+1,Nf);
@@ -77,4 +76,3 @@ Def = 1e3*ur(end);
 [~,CO2tmp] = CalcGasEmissions(td,m,0);
 CO2 = CO2tmp(1);
 end
-
