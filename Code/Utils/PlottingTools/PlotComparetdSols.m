@@ -38,7 +38,7 @@ subplot(245); title('(e) Pressure at base (MPa)'); xlabel('Time (year)');
 subplot(246); title('(f) Velocity at base (m/s)'); xlabel('Time (year)');
 subplot(247); title('(g) Porosity at base (%)'); xlabel('Time (year)');
 subplot(248); title('(h) Mole fraction water at base'); xlabel('Time (year)');
-legend({lgdtxt}, 'location', 'best', 'box', 'off');
+legend(lgdtxt, 'location', 'best', 'box', 'off');
 
 
 

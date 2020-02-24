@@ -17,12 +17,12 @@ U3=zeros(ix,iy);
 
 % explicitly assign source parameters
 %as
- xs    = as(1);     % center x
- ys    = as(2);     % center y
- z0    = as(3);     % center depth (positive)
- P     = as(4);     % excess pressure, mu*10^(-5) Pa
- a     = as(5);     % major axis, km
- b     = as(6);     % minor axis, km
+ xs    = as(1);     % center x, m
+ ys    = as(2);     % center y, m
+ z0    = as(3);     % center depth (positive, m)
+ P     = as(4);     % excess pressure, MPa
+ a     = as(5);     % major axis, m
+ b     = as(6);     % minor axis, m
  theta = as(7);     % plunge, rad  (0-pi)
  phi   = as(8);     % strike, rad  (0-2*pi)
  xn=x-xs;

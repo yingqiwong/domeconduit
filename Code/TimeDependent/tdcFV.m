@@ -155,11 +155,10 @@ opts.ch.chi_s = 0.3116;
 opts.ch.mu    = 20e9;
 opts.ch.beta_fixed = 0;
 opts.ch.beta  = 1e-8;
-opts.ch.beta_ch = 3/4/opts.ch.mu*(1 + 1/3*log10(1/opts.ch.AR));
+% opts.ch.beta_ch = 3/4/opts.ch.mu*(1 + 1/3*log10(1/opts.ch.AR)); % straight line interpolation
+opts.ch.beta_ch = Get_beta_ch(opts.ch.AR, opts.ch.depth, opts.ch.a, opts.ch.mu);
 opts.ch.x0    = 0;  %-2.160634633581430e3;
 opts.ch.y0    = 0;  %-2.907450243039151e3;
-% using straight line interpolation of Anderson and Segall (2011) Fig 5.
-% note here AR is defined in opposite sense, hence we do 1/m.ch.AR
 
 opts.total_h2o = o.total_h2o;
 opts.total_co2 = o.total_co2;
