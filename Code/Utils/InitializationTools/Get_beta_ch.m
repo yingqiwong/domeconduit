@@ -3,8 +3,9 @@ function [beta_ch] = Get_beta_ch (AR, depth, a, mu)
 % AR in tdcFV is width/height
 
 DepthBreak = mean([0.75,3.7]);
+Rs = a*(AR)^(2/3);
 
-if depth/a<DepthBreak
+if depth/Rs<DepthBreak
     ARcurve = csvread('beta_ch_shallow.txt');
 else
     ARcurve = csvread('beta_ch_medium.txt'); 
