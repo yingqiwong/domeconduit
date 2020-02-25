@@ -25,8 +25,8 @@ plot(ARq, (1 + 1/3*log10(ARq)), 'r-');
 % plot(1./ARq, beta_ch_tmp, 'y--');
 hold off;
 
-leg = legend(h, {'shallow (0.75)', 'medium', 'deep'}, 'box', 'off');
-title(leg, 'depth/
+leg = legend(h, {'shallow (0.75)', 'medium (3.7)', 'deep (7.5)'}, 'box', 'off');
+title(leg, 'depth/Rs');
 xlim([0.04,20]); ylim([0.8,100]);
 xlabel('Aspect ratio (height/width)');
 ylabel('Compressibility [\beta_{ch}/(3/4\mu)]');

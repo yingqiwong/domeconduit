@@ -31,9 +31,10 @@ hAx = tight_subplot(Nrow, Ncol, [0.1,0.05]);
 for mi = 1:length(mNames)
     axes(hAx(mi));
     for fi = 1:Nf
-        plot(Model(fi,mi)*ones(1,5), NzTD, 'k-'); hold on;
+        plot(Model(fi,mi)*ones(1,5), NzTD, '-', 'color', 0.7*ones(1,3)Sav); 
+        hold on;
         plot(Model(fi,mi)*ones(1,sum(tdSolved(:,fi))), NzTD(tdSolved(:,fi)), ...
-            'ko', 'markerfacecolor', 'b');
+            'o', 'markerfacecolor', 'b', 'MarkerEdgeColor', 'none');
         plot(Model(fi,mi)*ones(1,5-sum(tdSolved(:,fi))), NzTD(~tdSolved(:,fi)),...
             'rx', 'LineWidth', 2);
     end
