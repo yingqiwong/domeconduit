@@ -1,4 +1,5 @@
 function [beta_ch] = Get_beta_ch (AR, depth, a, mu)
+% [beta_ch] = Get_beta_ch (AR, depth, a, mu)
 % be careful - AR in beta_ch_txtfiles is Height/width. 
 % AR in tdcFV is width/height
 

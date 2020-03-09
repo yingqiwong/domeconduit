@@ -857,7 +857,7 @@ function [mw_ch, phi_g_ch] = calc_ch_gas (t, pch, m)
 % evaluates the two equations that relate total water and CO2 content in
 % the chamber to mw_ch and phi_g_ch.
 % if total volatile content changes with time, expand input variables
-% [mw_ch, phi_g_ch] = tdcFV('calc_ch_gas', pch, m);
+% [mw_ch, phi_g_ch] = tdcFV('calc_ch_gas', t, pch, m);
 
 mw_ch = fzero(@(mw) calc_mw_ch(t,mw,m,pch),[1e-2,1]);
 % if m.tdep.h2och_tvary == 1      % h2o varying with time

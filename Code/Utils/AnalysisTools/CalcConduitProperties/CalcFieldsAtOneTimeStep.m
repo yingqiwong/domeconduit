@@ -9,7 +9,8 @@ if isempty(ti)
     return; 
 end
 
-yscl = td.y(:,ti).*repmat(m.slv.sy(1:m.Nv),length(td.z),1);
+Nvz = m.Nv*m.Nz;
+yscl = td.y(1:Nvz,ti).*repmat(m.slv.sy(1:m.Nv),length(td.z),1);
 
 is = m.blk.is;
 p = yscl(is.p:m.Nv:end);
@@ -26,6 +27,7 @@ E = tdcFV('calc_exprs',td.x(ti),yscl,td.z',m,dpdz,1);
 E.p     = p;
 E.v.v   = yscl(is.v:m.Nv:end);
 E.phi_g = yscl(is.phi_g:m.Nv:end);
+E.mw    = yscl(is.mw:m.Nv:end);
 E.pp    = dpdz;
 
 [kmagn, kmags] = tdcFV('get_FaceVals',E.kvert/m.eta_g, m.dQUICKn);

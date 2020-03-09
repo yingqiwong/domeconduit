@@ -1,4 +1,4 @@
-function [uOut] = CalcDefmAtStnsFromPch (tyr, pch_td, m, time, PosRTZ, StnInd)
+function [uOut] = CalcDefmAtStnsFromPch (tyr, dpchIn, m, time, PosRTZ, StnInd)
 
 % material parameters
 mu      = m.ch.mu;              % shear modulus
@@ -12,8 +12,11 @@ strike  = deg2rad(0);           % strike of ellipsoid, deg (0 = aligned north)
 
 params = [m.ch.x0; m.ch.y0; m.ch.depth; 0; m.ch.a; m.ch.a*m.ch.AR; plunge; strike];
 
-dpch_td = pch_td - pch_td(1);
-dpch    = interp1(tyr, dpch_td, time, 'pchip');
+if ~isempty(tyr)
+    dpch = interp1(tyr, dpchIn, time, 'pchip');
+else
+    dpch = dpchIn;
+end
 
 u = zeros(length(time), 3);
 for ti = 1:length(time)
