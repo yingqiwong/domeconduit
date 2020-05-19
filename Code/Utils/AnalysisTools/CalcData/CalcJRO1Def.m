@@ -28,7 +28,7 @@ end
 
 if plot_opt == 1
     
-    load MSH_LSQwSeason_20191104.mat
+    load MSH_LSQwSeason.mat
     EruptDateLims = LoadEruptionDateLims;
     JRO1 = Stns(strcmp({Stns.name}, 'JRO1'));
     
