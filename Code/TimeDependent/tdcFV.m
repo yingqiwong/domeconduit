@@ -660,7 +660,7 @@ if m.Nv == 3, mw = m.mw_ch;
 else,         mw = y(is.mw:m.Nv:end); end
 
 zphigc = calc_zphigc(t, phi_g, m);
-degas  = 1./(1+exp(-0.025*(z-z(zphigc))));
+degas  = 1./(1+exp(-0.02*(z-z(zphigc))));
 
 % if m.PlugDepth == 0, degas = zeros(size(p)); degas(z>z(zphigc)) = 1; end
 

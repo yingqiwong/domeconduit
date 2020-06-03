@@ -2,15 +2,18 @@
 
 o = tdcFV('setdef');
 o.R = 30;
-o.op = 29e6;
+o.op = 27e6;
 o.phi_gc = 0.2;
-o.k_lat = 5e-12;
+o.k_lat = 1e-13;
+
 opts = tdcFV('ss_init',o);
 opts.Nz = 801;
+
 [ss, ssflag] = smf_rad_dz('solve', opts);
 [m, y0, z] = tdcFV('td_init', ss.m, ss, 0, 0);
 [td, flag] = tdcFV('des_run', y0, z, m);
 
+%%
 % PlotResults('plot_timeseries', td, m);
 % PlotResults('PlotProfiles', td, m, []);
 % [phigcVec,plugdepth] = PlotResults('calc_phigc_plugdepth', td, m, 1);
