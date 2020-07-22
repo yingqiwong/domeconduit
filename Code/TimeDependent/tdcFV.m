@@ -72,7 +72,7 @@ elseif ss.y(2,end)>1
         fprintf('ss exit velocity too fast = %.3e m/s. \n', ss.y(2,end));
     end
     ssflag = -11; return;
-elseif ss.y(2,end)<1e-6
+elseif ss.y(2,end)<1e-8
     if (opts.slv.verbose)
         fprintf('ss exit velocity too low = %.3e m/s. \n', ss.y(2,end));
     end
@@ -660,7 +660,7 @@ if m.Nv == 3, mw = m.mw_ch;
 else,         mw = y(is.mw:m.Nv:end); end
 
 zphigc = calc_zphigc(t, phi_g, m);
-degas  = 1./(1+exp(-0.02*(z-z(zphigc))));
+degas  = 1./(1+exp(-0.015*(z-z(zphigc))));
 
 % if m.PlugDepth == 0, degas = zeros(size(p)); degas(z>z(zphigc)) = 1; end
 

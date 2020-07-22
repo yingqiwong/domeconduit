@@ -204,7 +204,7 @@ function [] = PlotProfiles (td, m, inds)
 % PlotResults('PlotProfiles', td, m, []);
 
 tdvars = extract_y(td, m);
-if isempty(inds), inds = round(linspace(1,length(td.x),7)); end
+if isempty(inds), inds = round(linspace(1,length(td.x),15)); end
 % inds = 1:5:50;
 
 figure; 
