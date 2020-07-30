@@ -22,7 +22,7 @@ end
 Tmag1 = m.ch.V0*beta.*p1./pi/m.R^2./v1;
 Tmag2 = m.ch.V0*beta/m.ch.Omega;
 
-Tasc = (m.conduit_length./vmean);
+Tasc = (m.conduit_length./v1);
 
 Toutflux = Tmag1'./Tasc';
 Tinflux = Tmag2'./Tasc';
