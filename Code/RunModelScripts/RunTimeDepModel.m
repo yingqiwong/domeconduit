@@ -15,6 +15,7 @@ set(0,'defaultlinelinewidth',2, 'defaultaxesfontsize', 14);
 % load options for steady-state model
 o    = tdcFV('setdef');
 opts = tdcFV('ss_init',o);
+opts.Nz = 601;
 
 % run steady-state model
 [ss, opts, ssflag] = tdcFV('run_ssc_opts', opts);
