@@ -36,7 +36,7 @@ for ti = 1:length(td.x)
     RHS = -tdvars.phi_g(inds,ti).*tdvars.v(inds,ti).*drhogdz(inds,ti);
     
     % first point of RHS should contain vg from just below plug depth
-    kmag_pd = tdcFV('calc_k', m, tdvars.phi_g(pd, ti), 1);
+    kmag_pd = tdcFV('calc_k_allz', m, tdvars.phi_g(pd, ti), [], td.z(pd), 1);
     vg_pd = -kmag_pd/m.eta_g*dpdz(pd,ti);
     RHS(1) = RHS(1) + 1/dz*rho_g(pd,ti)*tdvars.phi_g(pd,ti)*vg_pd;
     

@@ -21,6 +21,7 @@ end
 function [ss, td, m, flag] = run_tdcFV (o, use_be, plot_opt)
 % [ss, td, m, flag] = tdcFV('run_tdcFV',o, 0, 1);
 % commands for running model given model parameters in o
+% use_be - whether to use backward euler calculation
 dbstop if error
 
 ss = []; td = []; m = []; flag = -14;
@@ -101,7 +102,9 @@ td = [];
 m.tStart = tic;
 [td, flag] = tdcFV('des_run', y0, z, m);
 tdtime = toc(m.tStart);
+
 if (m.slv.verbose), fprintf('Elapsed time = %.4f seconds.\n', tdtime); end
+
 end
 
 
@@ -319,6 +322,9 @@ function [td, flag] = des_run (y0, z, m, MassOn)
 % flag      successful solution? 
 
 if (nargin<4), MassOn = 1; end
+
+% convert dQuick to sparse matrix
+m.dQUICKn = sparse(m.dQUICKn);
 
 % specify Jacobian pattern for speed.
 % Could be sparser if desired, here overpredicting number of non-zero elements
@@ -886,10 +892,11 @@ function [dQUICKn] = QUICK (z)
 % north cell face, using cell-based integrals
 
 Nz              = length(z);
-DiagVecs        = [-1/8*ones(Nz,1), 3/4*ones(Nz,1), 3/8*ones(Nz,1)];
+dval            = [-1/8, 3/4, 3/8];
 
-dQUICK          = spdiags(DiagVecs, -1:1, Nz, Nz);
-dQUICKn         = dQUICK;
+dQUICKn         = diag(dval(1)*ones(Nz-1,1),-1) + diag(dval(2)*ones(Nz,1),0) + diag(dval(3)*ones(Nz-1,1),1);
+% dQUICK          = spdiags(dval, -1:1, Nz, Nz);
+% dQUICKn         = dQUICK;
 dQUICKn(1,:)    = [0.5, 0.5, zeros(1,Nz-2)];
 dQUICKn(end,:)  = [zeros(1,Nz-3), 3/8, -5/4, 15/8];
 
