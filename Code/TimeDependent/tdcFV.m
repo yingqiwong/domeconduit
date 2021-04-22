@@ -958,35 +958,36 @@ function [beta] = CalcCompressibility (t, pch, m)
 if m.ch.beta_fixed == 1
     beta = m.ch.beta;
 else
+    Nz = 21;
+    z  = linspace(-m.conduit_length, -m.conduit_length-2*m.ch.a, Nz)';
+    dz = abs(z(2) - z(1));
     
-    % find the pressure at the chamber center, which determines density
-    pMax  = 2*(m.ch.depth*m.sig.slope + m.sig.offset);
-    pcc   = fzero(@(pcc) ChamberCenterPressure(t, pcc, pch, m), [pch, pMax]);
-    rhocc = CalcRho(t, pcc, m);
+    % calculate properties of the chamber in depth
+    rho   = zeros(Nz,1);
+    p     = zeros(Nz,1); p(1) = pch;
     
-    % magma compressibility calculated using finite difference
-    pdiff      = pcc + [-1e6, 1e6];
-    rhodiff(1) = CalcRho(t, pdiff(1), m);
-    rhodiff(2) = CalcRho(t, pdiff(2), m);
+    for zi = 1:Nz
+        mw = fzero(@(mw) calc_mw_ch(t, mw, m, p(zi)), [1e-2,1]);
+        rho(zi) = CalcRho(p(zi), mw, m);
+        
+        % hydrostatic pressure
+        if zi<Nz,   p(zi+1) = p(zi) + rho(zi).*m.g.*dz; end
+    end
     
-    beta_mag = 1/rhocc*(diff(rhodiff)/diff(pdiff)); % magma compressibility
-    beta     = (beta_mag + m.ch.beta_ch);           % system compressibility
+    % depth-dependent magma compressibility
+    beta_z = 1./rho.*(gradient(rho,p));
+    
+    % now take the volume-averaged beta with this stratified model
+    zc = z + m.conduit_length + m.ch.a;
+    ri = m.ch.a*m.ch.AR*sqrt(1 - (zc./m.ch.a).^2);  % radius of each horizontal layer
+    vi = pi*ri.^2.*dz;                              % volume of each horizontal layer
+    beta = 1./m.ch.V0.*sum(vi.*beta_z) + m.ch.beta_ch;
 end
 
 end
 
-function [r] = ChamberCenterPressure (t, pcc, pch, m)
-% returns the residual for fzero to calculate the pressure at the center of
-% the chamber
-
-rho = CalcRho(t, pcc, m);
-r   = pcc - pch - rho*m.g*m.ch.a;
-end
-
-function [rho] = CalcRho (t, p, m)
+function [rho] = CalcRho (p, mw, m)
 % calculates the density of the magma given pressure at center of chamber
-
-[mw, phi_g] = calc_ch_gas(t, p, m);
 
 % Volatile mass fractions.
 [Chi_hd, Chi_cd] = solubility_liu_explicit(p, m.T, mw);
@@ -995,16 +996,23 @@ Chi_cd           = 1e-6*Chi_cd;
 c1               = 1./(1 - Chi_hd - Chi_cd);   
 c2               = 1./(1 + Chi_hd.*c1*(m.rho_l/m.rho_hd) + Chi_cd.*c1*(m.rho_l/m.rho_cd));
 c12              = c1.*c2;
+total_exsolved   = 1e-2*m.chi_ch.total.h2o + 1e-6*m.chi_ch.total.co2 - Chi_hd - Chi_cd;
+
+% gas density
+rho_g = p.*(mw./(m.Rw*m.T) + (1 - mw)./(m.Rc*m.T));
 
 % solid mass and volume fraction
 chi_s = m.ch.chi_s; % fixed chi_s.  Correct? Otherwise beta_mag < 0
+
+% get porosity in chamber
+d = (total_exsolved.*m.rho_l.*c12).*(1 - chi_s.*m.rho_l.*c12./(m.rho_s + chi_s.*(c12.*m.rho_l - m.rho_s)));
+phi_g = d/(rho_g + d);
+
+% solid volume fraction
 phi_s = chi_s.*m.rho_l.*c12.*(1 - phi_g)./(m.rho_s + chi_s.*(c12*m.rho_l - m.rho_s));
 
 % liquid fraction
 phi_l = (1 - phi_s - phi_g).*c2;
-
-% gas density
-rho_g = p.*(mw./(m.Rw*m.T) + (1 - mw)./(m.Rc*m.T));
 
 % bulk density
 rho = m.rho_l*phi_l.*c1 + m.rho_s.*phi_s + rho_g.*phi_g;
