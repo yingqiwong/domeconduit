@@ -1,10 +1,13 @@
-function [] = SaveFigure(figname)
+function [] = SaveFigure(figname, fighandle, formattype)
 
-fig = gcf;
-fig.PaperPositionMode = 'auto';
-fig_pos = fig.PaperPosition;
-fig.PaperSize = [fig_pos(3) fig_pos(4)];
+if nargin < 2, fighandle = gcf; end
+if nargin < 3, formattype = '-dpdf'; end
 
-print(fig,  figname, '-depsc')
-saveas(fig, figname, 'fig');
+fig_pos = fighandle.PaperPosition;
+
+fighandle.PaperPositionMode = 'manual';
+fighandle.PaperPosition     = [0 0 fig_pos(3) fig_pos(4)];
+fighandle.PaperSize         = [fig_pos(3) fig_pos(4)];
+
+print(fighandle,  figname, formattype)
 end
