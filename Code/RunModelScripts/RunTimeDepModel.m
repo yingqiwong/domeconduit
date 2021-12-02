@@ -16,9 +16,11 @@ set(0,'defaultlinelinewidth',2, 'defaultaxesfontsize', 14);
 o    = tdcFV('setdef');
 opts = tdcFV('ss_init',o);
 opts.Nz = 601;
+opts.phi_gc = 0;
 
 % run steady-state model
 [ss, opts, ssflag] = tdcFV('run_ssc_opts', opts);
+ss = smf_rad_dz('add_fields',ss);
 
 % load time-dependent options
 [m, y0, z]    = tdcFV('td_init', ss.m, ss, 0, 0);
